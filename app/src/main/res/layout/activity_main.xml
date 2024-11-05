@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="20dp"
+    tools:context=".MainActivity">
+
+    <Button
+        android:id="@+id/btn_open_setting"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="打开原生系统设置"
+        tools:ignore="HardcodedText" />
+
+    <Button
+        android:id="@+id/btn_carlife_usb"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="切换 CarLife USB"
+        tools:ignore="HardcodedText" />
+
+    <Button
+        android:id="@+id/btn_carlife_wifi"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="切换 CarLife WIFI"
+        tools:ignore="HardcodedText" />
+
+    <Button
+        android:id="@+id/btn_usb_host"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="切换 USB HOST MODE"
+        tools:ignore="HardcodedText" />
+
+    <Button
+        android:id="@+id/btn_usb_device"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="切换 USB DEVICE MODE"
+        tools:ignore="HardcodedText" />
+
+    <Button
+        android:id="@+id/btn_reboot_os"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="重启车机系统"
+        tools:ignore="HardcodedText" />
+
+    <Button
+        android:id="@+id/btn_reboot_rec"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="重启到 Recovery"
+        tools:ignore="HardcodedText" />
+
+    <Button
+        android:id="@+id/btn_finish"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="退出应用"
+        tools:ignore="HardcodedText" />
+
+
+</LinearLayout>
