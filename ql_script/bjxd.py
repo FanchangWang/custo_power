@@ -362,7 +362,9 @@ if __name__ == "__main__":
         print(f"\n======== ▷ 第 {i} 个账号 ◁ ========")
         push_content += f"\n======== ▷ 第 {i} 个账号 ◁ ========\n"
         push_content += RUN(token).main() + "\n"
+
     try:
+        push_content = push_content.replace("\n", "<br/>")
         QLAPI.notify(push_title, push_content)
     except NameError:
         print(push_title, "\n", push_content)
