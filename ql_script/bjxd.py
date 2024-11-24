@@ -19,30 +19,35 @@ requests.packages.urllib3.disable_warnings(InsecurePlatformWarning)
 
 
 class RUN:
-    name = "北京现代"
+    name = "北京现代 APP 自动任务"
 
-    def __init__(self, token):
-        self.token = token
+    def __init__(self):
         self.pre_score = 0
         self.article_ids = []
-        self.gpt_api_key = os.getenv("HUNYUAN_API_KEY")  # 混元 APIKey
+        self.gpt_api_key = ""  # os.getenv("HUNYUAN_API_KEY") # 腾讯混元 APIKey
+        self.gpt_answer = ""  # 腾讯混元AI 返回的答案
+        self.pre_answer = ""  # 上一次回答正确的答案
         self.headers = {
             "Host": "bm2-api.bluemembers.com.cn",
-            "token": token,
+            "token": "",  # 登录后获取到的 token
             "Accept": "*/*",
             "device": "android",
             "User-Agent": "okhttp/3.12.12",
             "App-Version": "8.26.1",
             "Origin-Id": "8ea51813bb38346e",
         }
-        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        self.push_content = f"运行时间: {current_time}\n"
+        self.push_content = ""
 
-    def add_push_content(self, content):
+    def add_message(self, content, is_print=True):
+        if is_print:
+            print(content)
         self.push_content += content + "\n"
 
-    def get_push_content(self):
-        return self.push_content
+    def notify_message(self):
+        try:
+            QLAPI.notify(self.name, self.push_content.replace("\n", "<br/>"))
+        except NameError:
+            print(self.name, "\n\n", self.push_content)
 
     def user_info(self):
         url = "https://bm2-api.bluemembers.com.cn/v1/app/account/users/info"
@@ -52,14 +57,12 @@ class RUN:
             phone = response_json["data"]["phone"]
             score_value = response_json["data"]["score_value"]
             self.pre_score = score_value
-            print(f"👻 用户名: {nickname} | 手机号: {phone} | 积分: {score_value}")
-            self.add_push_content(
+            self.add_message(
                 f"👻 用户名: {nickname} | 手机号: {phone} | 积分: {score_value}"
             )
             return True
         else:
-            print(f"❌ 获取用户信息失败， token 已失效，请重新抓包")
-            self.add_push_content(f"❌ 获取用户信息失败， token 已失效，请重新抓包")
+            self.add_message(f"❌ 获取用户信息失败， token 已失效，请重新抓包")
             return False
 
     def user_score_info(self):
@@ -70,10 +73,7 @@ class RUN:
             phone = response_json["data"]["phone"]
             score_value = response_json["data"]["score_value"]
             diff_score = score_value - self.pre_score
-            print(
-                f"👻 用户名: {nickname} | 用户: {phone} | 总积分: {score_value} | 本次运行新增积分: {diff_score}"
-            )
-            self.add_push_content(
+            self.add_message(
                 f"👻 用户名: {nickname} | 手机号: {phone} | 总积分: {score_value} | 本次运行新增积分: {diff_score}"
             )
 
@@ -87,24 +87,19 @@ class RUN:
 
             if "action4" in actions:  # 签到任务
                 if actions["action4"].get("status") == 1:
-                    print("✅ 签到任务 已完成，跳过")
-                    self.add_push_content("✅ 签到任务 已完成，跳过")
+                    self.add_message("✅ 签到任务 已完成，跳过")
                 else:
-                    print("签到任务 未完成，开始执行任务")
-                    self.add_push_content("签到任务 未完成，开始执行任务")
+                    self.add_message("签到任务 未完成，开始执行任务")
                     self.do_sign()
                     time.sleep(random.randint(10, 15))
             else:
-                print("❌ task list action4 签到任务 不存在")
-                self.add_push_content("❌ task list action4 签到任务 不存在")
+                self.add_message("❌ task list action4 签到任务 不存在")
 
             if "action12" in actions:  # 浏览文章任务
                 if actions["action12"].get("status") == 1:
-                    print("✅ 浏览文章任务 已完成，跳过")
-                    self.add_push_content("✅ 浏览文章任务 已完成，跳过")
+                    self.add_message("✅ 浏览文章任务 已完成，跳过")
                 else:
-                    print("浏览文章任务 未完成，开始执行任务")
-                    self.add_push_content("浏览文章任务 未完成，开始执行任务")
+                    self.add_message("浏览文章任务 未完成，开始执行任务")
                     self.article_list()
                     for i in range(3):
                         self.view_article()
@@ -112,23 +107,18 @@ class RUN:
                     self.article_score_add()
                     time.sleep(random.randint(5, 10))
             else:
-                print("❌ task list action12 浏览文章任务 不存在")
-                self.add_push_content("❌ task list action12 浏览文章任务 不存在")
+                self.add_message("❌ task list action12 浏览文章任务 不存在")
 
             if "action39" in actions:  # 答题任务
                 if actions["action39"].get("status") == 1:
-                    print("✅ 答题任务 已完成，跳过")
-                    self.add_push_content("✅ 答题任务 已完成，跳过")
+                    self.add_message("✅ 答题任务 已完成，跳过")
                 else:
-                    print("答题任务 未完成，开始执行任务")
-                    self.add_push_content("答题任务 未完成，开始执行任务")
+                    self.add_message("答题任务 未完成，开始执行任务")
                     self.daily_question()
             else:
-                print("❌ task list action39 答题任务 不存在")
-                self.add_push_content("❌ task list action39 答题任务 不存在")
+                self.add_message("❌ task list action39 答题任务 不存在")
         else:
-            print(f'❌ 获取任务列表失败， {response_json_["msg"]}')
-            self.add_push_content(f'❌ 获取任务列表失败， {response_json_["msg"]}')
+            self.add_message(f'❌ 获取任务列表失败， {response_json_["msg"]}')
 
     def do_sign(self):
         score = 0
@@ -153,8 +143,7 @@ class RUN:
                                 f"预计签到成功，可得{score}积分，太低不签，重新初始化！随机延时 20-30s"
                             )
             else:
-                print(f'❌ 获取签到列表失败， {response_json_["msg"]}')
-                self.add_push_content(f'❌ 获取签到列表失败， {response_json_["msg"]}')
+                self.add_message(f'❌ 获取签到列表失败， {response_json_["msg"]}')
                 break
             time.sleep(random.randint(20, 30))
 
@@ -170,11 +159,9 @@ class RUN:
         response_json_ = requests.post(url, headers=self.headers, json=json_data).json()
         print("article_list response_json_=", response_json_)
         if response_json_["code"] == 0:
-            print(f"✅ 签到成功 | 积分+{score}")
-            self.add_push_content(f"✅ 签到成功 | 积分+{score}")
+            self.add_message(f"✅ 签到成功 | 积分+{score}")
         else:
-            print(f'❌ 签到失败， {response_json_["msg"]}')
-            self.add_push_content(f'❌ 签到失败， {response_json_["msg"]}')
+            self.add_message(f'❌ 签到失败， {response_json_["msg"]}')
 
     # 浏览3篇文章5积分
     def view_article(self):
@@ -199,8 +186,7 @@ class RUN:
                 article_id = item["hid"]
                 self.article_ids.append(article_id)
         else:
-            print(f'❌ 获取文章列表失败， {response_json_["msg"]}')
-            self.add_push_content(f'❌ 获取文章列表失败， {response_json_["msg"]}')
+            self.add_message(f'❌ 获取文章列表失败， {response_json_["msg"]}')
 
     def article_score_add(self):
         json_data = {
@@ -212,11 +198,9 @@ class RUN:
         print("article_score_add response_json=", response_json_)
         if response_json_["code"] == 0:
             score = response_json_["data"]["score"]
-            print(f"✅ 浏览文章成功 | 积分+{score}")
-            self.add_push_content(f"✅ 浏览文章成功 | 积分+{score}")
+            self.add_message(f"✅ 浏览文章成功 | 积分+{score}")
         else:
-            print(f'❌ 浏览文章失败， {response_json_["msg"]}')
-            self.add_push_content(f'❌ 浏览文章失败， {response_json_["msg"]}')
+            self.add_message(f'❌ 浏览文章失败， {response_json_["msg"]}')
 
     # 每日问答
     def daily_question(self):
@@ -279,16 +263,25 @@ class RUN:
         return ""
 
     def get_answer(self, question_str):
-        if self.gpt_api_key:
-            answer = self.get_gpt_answer(question_str)
-            print(f"本次使用GPT回答，GPT给出的答案是：{answer}")
-            if answer == "":
-                answer = random.choice(["A", "B", "C", "D"])
-            return answer
+        if self.pre_answer:
+            answer = self.pre_answer
+            print(f"使用历史正确答案：{answer}")
+        elif self.gpt_api_key:
+            if self.gpt_answer:
+                answer = self.gpt_answer
+                print(f"使用历史 GPT 答案：{answer}")
+            else:
+                answer = self.get_gpt_answer(question_str)
+                print(f"本次使用 GPT 回答，GPT 给出的答案是：{answer}")
+                if answer == "":
+                    answer = random.choice(["A", "B", "C", "D"])
+                    print(f"GPT 未返回答案，改为随机答题, 随机选出的答案是: {answer}")
+                else:
+                    self.gpt_answer = answer
         else:
             answer = random.choice(["A", "B", "C", "D"])
-            print(f"本次盲答, 随机选出的答案是: {answer}")
-            return answer
+            print(f"本次随机答题, 随机选出的答案是: {answer}")
+        return answer
 
     def answer_question(self, questions_hid, my_answer):
         print("开始答题")
@@ -303,68 +296,59 @@ class RUN:
         # response_json= {'code': 0, 'data': {'answer': '', 'answer_score': '', 'state': 3}, 'msg': '', 'title': ''}
         if response_json_["code"] == 0:
             if response_json_["data"]["state"] == 3:
-                print("❌ 回答错误")
-                self.add_push_content("❌ 答题错误")
+                self.add_message("❌ 答题错误")
             elif response_json_["data"]["state"] == 2:
+                if self.pre_answer != my_answer:
+                    self.pre_answer = my_answer  # 回答正确，将答案记录下来
                 answer = response_json_["data"]["answer"]  # C.造价低
                 print("answer=", answer)
                 score = response_json_["data"]["answer_score"]
                 print("score=", score)
-                print(f"✅ 答题正确 | 积分+{score}")
-                self.add_push_content(f"✅ 答题正确 | 积分+{score}")
+                self.add_message(f"✅ 答题正确 | 积分+{score}")
         else:
-            print(f'❌ 答题失败, msg: {response_json_["msg"]}')
-            self.add_push_content(f'❌ 答题失败, msg: {response_json_["msg"]}')
+            self.add_message(f'❌ 答题失败, msg: {response_json_["msg"]}')
 
     def main(self):
-        if self.user_info():
-            self.do_task()  # 根据任务列表完成请求自动执行任务
+        tokenStr = os.getenv("BJXD")
+        if not tokenStr:
+            self.add_message(
+                f"⛔️ 未获取到 tokens 环境变量：请检查环境变量 BJXD 是否填写"
+            )
+        else:
+            tokens = tokenStr.split(",")
+            self.add_message(f"👻 共获取到用户 token {len(tokens)} 个")
+            self.gpt_api_key = os.getenv("HUNYUAN_API_KEY")
+            if self.gpt_api_key:
+                self.add_message("💯 已获取到腾讯混元AI APIKey，使用腾讯混元AI答题")
+            else:
+                self.add_message(
+                    "😭 未设置腾讯混元AI HUNYUAN_API_KEY 环境变量，使用随机答题"
+                )
 
-            # 单独执行 签到任务
-            # self.do_sign()
-            # time.sleep(random.randint(10, 15))
-
-            # 单独执行 浏览文章任务
-            # self.article_list()
-            # for i in range(3):
-            #     self.view_article()
-            #     time.sleep(random.randint(10, 15))
-            # self.article_score_add()
-            # time.sleep(random.randint(5, 10))
-
-            # 单独执行 答题任务
-            # self.daily_question()
-
-            self.user_score_info()  # 获取积分信息 统计本次运行新增的积分
-        return self.get_push_content()
+            # 循环遍历 tokens
+            for i, token in enumerate(tokens, start=1):
+                if i > 1:
+                    print("\n进行下一个账号, 等待 10-15 秒...")
+                    time.sleep(random.randint(10, 15))
+                self.add_message(f"\n======== ▷ 第 {i} 个账号 ◁ ========\n")
+                self.headers["token"] = token
+                if self.user_info():
+                    self.do_task()  # 根据任务列表完成请求自动执行任务
+                    self.user_score_info()  # 获取积分信息 统计本次运行新增的积分
+                    # 单独执行 签到任务
+                    # self.do_sign()
+                    # time.sleep(random.randint(10, 15))
+                    # 单独执行 浏览文章任务
+                    # self.article_list()
+                    # for i in range(3):
+                    #     self.view_article()
+                    #     time.sleep(random.randint(10, 15))
+                    # self.article_score_add()
+                    # time.sleep(random.randint(5, 10))
+                    # 单独执行 答题任务
+                    # self.daily_question()
+        self.notify_message()
 
 
 if __name__ == "__main__":
-    env_name = "BJXD"
-    tokenStr = os.getenv(env_name)
-    if not tokenStr:
-        print(f"⛔️ 未获取到ck变量：请检查变量 {env_name} 是否填写")
-        exit(0)
-
-    push_title = "北京现代 APP 自动任务"
-    push_content = ""
-
-    tokens = tokenStr.split(",")
-
-    print(f"共获取到 tokens: {len(tokens)} 个")
-    push_content += f"共获取到 tokens: {len(tokens)} 个\n"
-
-    # 循环打印每个元素
-    for i, token in enumerate(tokens, start=1):
-        if i > 1:
-            print("\n随机等待 10-15s 进行下一个账号")
-            time.sleep(random.randint(10, 15))
-        print(f"\n======== ▷ 第 {i} 个账号 ◁ ========")
-        push_content += f"\n======== ▷ 第 {i} 个账号 ◁ ========\n"
-        push_content += RUN(token).main() + "\n"
-
-    try:
-        push_content = push_content.replace("\n", "<br/>")
-        QLAPI.notify(push_title, push_content)
-    except NameError:
-        print(push_title, "\n", push_content)
+    RUN().main()
