@@ -179,7 +179,7 @@ class RUN:
         }
         url = "https://bm2-api.bluemembers.com.cn/v1/app/white/article/list2"
         response_json_ = requests.get(url, params=params, headers=self.headers).json()
-        print("article_list response_json=", response_json_)
+        # print("article_list response_json=", response_json_)
         if response_json_["code"] == 0:
             list = response_json_["data"]["list"]
             for item in list:
@@ -232,9 +232,7 @@ class RUN:
             self.answer_question(questions_hid, answer)
 
     def get_gpt_answer(self, content):
-        choice_base_desc = (
-            "这是一个选择题，请严格按照以下格式回答：芝麻开门#你的答案#芝麻开门\n"
-        )
+        choice_base_desc = "你是一个专业的北京现代汽车专家，请直接给出这个单选题的答案，并且不要带'答案'等其他内容。\n"
         url = "https://api.hunyuan.cloud.tencent.com/v1/chat/completions"
         headers = {
             "Authorization": f"Bearer {self.gpt_api_key}",
@@ -249,9 +247,8 @@ class RUN:
             response.raise_for_status()  # 检查响应状态码，如果不是 200，抛出 HTTPError
             response_json = response.json()
             extracted_content = response_json["choices"][0]["message"]["content"]
-            parts = extracted_content.split("#")
-            if len(parts) >= 3 and parts[1] in ["A", "B", "C", "D"]:
-                return parts[1]
+            if extracted_content in ["A", "B", "C", "D"]:
+                return extracted_content
             else:
                 print(f"腾讯混元AI 无效的答案: {extracted_content}")
         except requests.exceptions.RequestException as e:
