@@ -1,8 +1,10 @@
 """
-name: 北京现代 APP 自动任务脚本
-author: 原作者 https://github.com/xiaobu689/HhhhScripts 我修改了部分代码以适配青龙面板
-env: BJXD="token1,token2,token3" // 北京现代 APP api token // 多个账号用英文 , 分割
-env: HUNYUAN_API_KEY="sk-xxxx" // 腾讯混元AI APIKey
+北京现代 APP 自动任务脚本
+功能：自动完成签到、浏览文章、每日答题等任务
+
+环境变量：
+    BJXD: str - 北京现代 APP api token (多个账号用英文逗号分隔)
+    HUNYUAN_API_KEY: str - 腾讯混元AI APIKey (可选)
 
 cron: 25 6 * * *
 """
@@ -11,341 +13,502 @@ import os
 import random
 import time
 from datetime import datetime
+from typing import List, Optional, Dict, Any
 import requests
 from urllib3.exceptions import InsecureRequestWarning, InsecurePlatformWarning
 
+# 禁用 SSL 警告
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 requests.packages.urllib3.disable_warnings(InsecurePlatformWarning)
 
 
-class RUN:
-    name = "北京现代 APP 自动任务"
+class BeiJingHyundai:
+    """北京现代APP自动任务类"""
+
+    # 基础配置
+    NAME = "北京现代 APP 自动任务"
+    BASE_URL = "https://bm2-api.bluemembers.com.cn"
+    API_ENDPOINTS = {
+        "user_info": "/v1/app/account/users/info",
+        "task_list": "/v1/app/user/task/list",
+        "sign_list": "/v1/app/user/reward_list",
+        "sign_submit": "/v1/app/user/reward_report",
+        "article_list": "/v1/app/white/article/list2",
+        "article_detail": "/v1/app/white/article/detail_app/{}",
+        "task_score": "/v1/app/score",
+        "question_info": "/v1/app/special/daily/ask_info",
+        "question_submit": "/v1/app/special/daily/ask_answer",
+    }
+
+    # HTTP 请求头
+    DEFAULT_HEADERS = {
+        "token": "",
+        "device": "mp",
+    }
+
+    # 腾讯混元AI配置
+    HUNYUAN_API_URL = "https://api.hunyuan.cloud.tencent.com/v1/chat/completions"
+    HUNYUAN_MODEL = "hunyuan-turbo"
 
     def __init__(self):
-        self.pre_score = 0
-        self.article_ids = []
-        self.gpt_api_key = ""  # os.getenv("HUNYUAN_API_KEY") # 腾讯混元 APIKey
-        self.gpt_answer = ""  # 腾讯混元AI 返回的答案
-        self.pre_answer = ""  # 上一次回答正确的答案
-        self.headers = {
-            "Host": "bm2-api.bluemembers.com.cn",
-            "token": "",  # 登录后获取到的 token
-            "Accept": "*/*",
-            "device": "android",
-            "User-Agent": "okhttp/3.12.12",
-            "App-Version": "8.26.1",
-            "Origin-Id": "8ea51813bb38346e",
-        }
-        self.push_content = ""
+        """初始化实例变量"""
+        self.article_ids: List[str] = []
+        self.ai_api_key: str = ""
+        self.ai_answer: str = ""
+        self.correct_answer: str = ""
+        self.log_content: str = ""
+        self.users: List[Dict[str, Any]] = []
+        self.headers: Dict[str, str] = self.DEFAULT_HEADERS.copy()
 
-    def add_message(self, content, is_print=True):
-        if is_print:
+    def log(self, content: str, print_to_console: bool = True) -> None:
+        """添加日志"""
+        if print_to_console:
             print(content)
-        self.push_content += content + "\n"
+        self.log_content += content + "\n"
 
-    def notify_message(self):
+    def push_notification(self) -> None:
+        """推送通知"""
         try:
-            QLAPI.notify(self.name, self.push_content.replace("\n", "<br/>"))
+            QLAPI.notify(self.NAME, self.log_content.replace("\n", "<br/>"))
         except NameError:
-            print(self.name, "\n\n", self.push_content)
+            print(f"\n\n🚀 推送通知\n\n{self.NAME}\n\n{self.log_content}")
 
-    def user_info(self):
-        url = "https://bm2-api.bluemembers.com.cn/v1/app/account/users/info"
-        response_json = requests.get(url, headers=self.headers).json()
-        if response_json["code"] == 0:
-            nickname = response_json["data"]["nickname"]
-            phone = response_json["data"]["phone"]
-            score_value = response_json["data"]["score_value"]
-            self.pre_score = score_value
-            self.add_message(
-                f"👻 用户名: {nickname} | 手机号: {phone} | 积分: {score_value}"
+    def make_request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
+        """
+        发送API请求
+        Args:
+            method: 请求方法 (GET/POST)
+            endpoint: API端点
+            **kwargs: 请求参数
+        Returns:
+            Dict[str, Any]: API响应数据
+        """
+        url = f"{self.BASE_URL}{endpoint}"
+        try:
+            response = requests.request(method, url, headers=self.headers, **kwargs)
+            response.raise_for_status()
+            result = response.json()
+
+            # 找到对应的 API_ENDPOINTS key
+            endpoint_key = next(
+                (
+                    key
+                    for key, value in self.API_ENDPOINTS.items()
+                    if value == endpoint
+                    or value.format("*") == endpoint.split("/")[0] + "/*"
+                ),
+                None,
             )
-            return True
-        else:
-            self.add_message(f"❌ 获取用户信息失败， token 已失效，请重新抓包")
-            return False
 
-    def user_score_info(self):
-        url = "https://bm2-api.bluemembers.com.cn/v1/app/account/users/info"
-        response_json = requests.get(url, headers=self.headers).json()
-        if response_json["code"] == 0:
-            nickname = response_json["data"]["nickname"]
-            phone = response_json["data"]["phone"]
-            score_value = response_json["data"]["score_value"]
-            diff_score = score_value - self.pre_score
-            self.add_message(
-                f"👻 用户名: {nickname} | 手机号: {phone} | 总积分: {score_value} | 本次运行新增积分: {diff_score}"
+            # 排除不需要打印的接口
+            if endpoint_key and endpoint_key not in ["article_list", "article_detail"]:
+                print(f"{endpoint_key} response ——> {result}")
+
+            return result
+        except requests.exceptions.RequestException as e:
+            self.log(f"❌ API请求失败: {str(e)}")
+            return {"code": -1, "msg": str(e)}
+
+    def fetch_user_info(self) -> Dict[str, Any]:
+        """
+        获取用户信息
+        Returns:
+            Dict[str, Any]: 用户信息字典，获取失败返回空字典
+        """
+        response = self.make_request("GET", self.API_ENDPOINTS["user_info"])
+
+        if response["code"] == 0:
+            data = response["data"]
+            return {
+                "token": self.headers["token"],
+                "hid": data["hid"],
+                "nickname": data["nickname"],
+                "phone": data["phone"],
+                "score_value": data["score_value"],
+                "share_user_hid": "",
+                "task": {"sign": False, "view": False, "question": False},
+            }
+
+        self.log(f"❌ 账号已失效，请重新抓包；token: {self.headers['token']}")
+        return {}
+
+    def get_score_update(self, initial_score: int) -> None:
+        """获取积分更新"""
+        response = self.make_request("GET", self.API_ENDPOINTS["user_info"])
+
+        if response["code"] == 0:
+            data = response["data"]
+            diff_score = data["score_value"] - initial_score
+            self.log(
+                f"🎉 总积分: {data['score_value']} | " f"本次运行新增积分: {diff_score}"
             )
 
-    def do_task(self):
-        url = "https://bm2-api.bluemembers.com.cn/v1/app/user/task/list"
-        response_json_ = requests.get(url, headers=self.headers).json()
-        print("get_task_list response_json_=", response_json_)
-        if response_json_["code"] == 0:
-            # 获取 data 字段
-            actions = response_json_.get("data", {})
+    # 任务相关
+    def check_task_status(self, user: Dict[str, Any]) -> None:
+        """检查任务状态"""
+        response = self.make_request("GET", self.API_ENDPOINTS["task_list"])
 
-            if "action4" in actions:  # 签到任务
-                if actions["action4"].get("status") == 1:
-                    self.add_message("✅ 签到任务 已完成，跳过")
-                else:
-                    self.add_message("签到任务 未完成，开始执行任务")
-                    self.do_sign()
-                    time.sleep(random.randint(10, 15))
-            else:
-                self.add_message("❌ task list action4 签到任务 不存在")
+        if response["code"] != 0:
+            self.log(f'❌ 获取任务列表失败: {response["msg"]}')
+            return
 
-            if "action12" in actions:  # 浏览文章任务
-                if actions["action12"].get("status") == 1:
-                    self.add_message("✅ 浏览文章任务 已完成，跳过")
-                else:
-                    self.add_message("浏览文章任务 未完成，开始执行任务")
-                    self.article_list()
-                    for i in range(3):
-                        self.view_article()
-                        time.sleep(random.randint(10, 15))
-                    self.article_score_add()
-                    time.sleep(random.randint(5, 10))
-            else:
-                self.add_message("❌ task list action12 浏览文章任务 不存在")
+        actions = response.get("data", {})
 
-            if "action39" in actions:  # 答题任务
-                if actions["action39"].get("status") == 1:
-                    self.add_message("✅ 答题任务 已完成，跳过")
-                else:
-                    self.add_message("答题任务 未完成，开始执行任务")
-                    self.daily_question()
-            else:
-                self.add_message("❌ task list action39 答题任务 不存在")
+        # 检查签到任务
+        if "action4" in actions:
+            user["task"]["sign"] = actions["action4"].get("status") == 1
         else:
-            self.add_message(f'❌ 获取任务列表失败， {response_json_["msg"]}')
+            self.log("❌ task list action4 签到任务 不存在")
 
-    def do_sign(self):
-        score = 0
-        hid = ""
-        url = "https://bm2-api.bluemembers.com.cn/v1/app/user/reward_list"
-        while score < 5:
-            response_json_ = requests.get(url, headers=self.headers).json()
-            print("do_sign response_json_=", response_json_)
-            if response_json_["code"] == 0:
-                hid = response_json_["data"]["hid"]
-                rewardHash = response_json_["data"]["rewardHash"]
-                list = response_json_["data"]["list"]
-                for item in list:
-                    if item["hid"] == hid:
-                        score = item["score"]
-                        if score >= 5:
-                            print(f"tip: 如果签到成功, 积分+{score}")
-                            self.sign(hid, rewardHash, score)
-                            break
-                        else:
-                            print(
-                                f"预计签到成功，可得{score}积分，太低不签，重新初始化！随机延时 20-30s"
-                            )
-            else:
-                self.add_message(f'❌ 获取签到列表失败， {response_json_["msg"]}')
+        # 检查浏览文章任务
+        if "action12" in actions:
+            user["task"]["view"] = actions["action12"].get("status") == 1
+        else:
+            self.log("❌ task list action12 浏览文章任务 不存在")
+
+        # 检查答题任务
+        if "action39" in actions:
+            user["task"]["question"] = actions["action39"].get("status") == 1
+        else:
+            self.log("❌ task list action39 答题任务 不存在")
+
+    # 签到相关
+    def execute_sign_task(self) -> None:
+        """执行签到任务"""
+        max_attempts = 5  # 最大尝试次数
+        best_score = 0
+        best_params = None
+
+        for attempt in range(max_attempts):
+            response = self.make_request("GET", self.API_ENDPOINTS["sign_list"])
+
+            if response["code"] != 0:
+                self.log(f'❌ 获取签到列表失败: {response["msg"]}')
                 break
+
+            data = response["data"]
+            hid = data["hid"]
+            reward_hash = data["rewardHash"]
+
+            for item in data["list"]:
+                if item["hid"] == hid:
+                    current_score = item["score"]
+                    print(
+                        f"第{attempt + 1}次获取签到列表：score={current_score} hid={hid} rewardHash={reward_hash}"
+                    )
+
+                    if current_score > best_score:
+                        best_score = current_score
+                        best_params = (hid, reward_hash, current_score)
+                    print(f"当前可获得签到积分: {best_score}")
+                    break
+
+            print(f"继续尝试获取更高积分，延时20-30s")
             time.sleep(random.randint(20, 30))
 
-    def sign(self, hid, rewardHash, score):
-        # 状态上报
+        if best_params:
+            self.submit_sign(*best_params)
+        else:
+            self.log("❌ 未能获取到有效的签到参数")
+
+    def submit_sign(self, hid: str, reward_hash: str, score: int) -> None:
+        """提交签到"""
         json_data = {
             "hid": hid,
-            "hash": rewardHash,
+            "hash": reward_hash,
             "sm_deviceId": "",
             "ctu_token": None,
         }
-        url = "https://bm2-api.bluemembers.com.cn/v1/app/user/reward_report"
-        response_json_ = requests.post(url, headers=self.headers, json=json_data).json()
-        print("article_list response_json_=", response_json_)
-        if response_json_["code"] == 0:
-            self.add_message(f"✅ 签到成功 | 积分+{score}")
-        else:
-            self.add_message(f'❌ 签到失败， {response_json_["msg"]}')
+        response = self.make_request(
+            "POST", self.API_ENDPOINTS["sign_submit"], json=json_data
+        )
 
-    # 浏览3篇文章5积分
-    def view_article(self):
+        if response["code"] == 0:
+            self.log(f"✅ 签到成功 | 积分+{score}")
+        else:
+            self.log(f'❌ 签到失败: {response["msg"]}')
+
+    # 文章浏览相关
+    def read_article(self) -> None:
+        """浏览文章"""
+        if not self.article_ids:
+            self.log("❌ 没有可用的文章ID")
+            return
+
         article_id = random.choice(self.article_ids)
         self.article_ids.remove(article_id)
         print(f"浏览文章 | 文章ID: {article_id}")
-        url = f"https://bm2-api.bluemembers.com.cn/v1/app/white/article/detail_app/{article_id}"
-        requests.get(url, headers=self.headers)
 
-    def article_list(self):
+        endpoint = self.API_ENDPOINTS["article_detail"].format(article_id)
+        self.make_request("GET", endpoint)
+
+    def fetch_article_list(self) -> None:
+        """获取文章列表"""
         params = {
             "page_no": "1",
             "page_size": "20",
             "type_hid": "",
         }
-        url = "https://bm2-api.bluemembers.com.cn/v1/app/white/article/list2"
-        response_json_ = requests.get(url, params=params, headers=self.headers).json()
-        # print("article_list response_json=", response_json_)
-        if response_json_["code"] == 0:
-            list = response_json_["data"]["list"]
-            for item in list:
-                article_id = item["hid"]
-                self.article_ids.append(article_id)
-        else:
-            self.add_message(f'❌ 获取文章列表失败， {response_json_["msg"]}')
+        response = self.make_request(
+            "GET", self.API_ENDPOINTS["article_list"], params=params
+        )
 
-    def article_score_add(self):
+        if response["code"] == 0:
+            self.article_ids = [item["hid"] for item in response["data"]["list"]]
+        else:
+            self.log(f'❌ 获取文章列表失败: {response["msg"]}')
+
+    def submit_article_score(self) -> None:
+        """提交文章积分"""
         json_data = {
             "ctu_token": "",
             "action": 12,
         }
-        url = "https://bm2-api.bluemembers.com.cn/v1/app/score"
-        response_json_ = requests.post(url, headers=self.headers, json=json_data).json()
-        print("article_score_add response_json=", response_json_)
-        if response_json_["code"] == 0:
-            score = response_json_["data"]["score"]
-            self.add_message(f"✅ 浏览文章成功 | 积分+{score}")
+        response = self.make_request(
+            "POST", self.API_ENDPOINTS["task_score"], json=json_data
+        )
+
+        if response["code"] == 0:
+            score = response["data"]["score"]
+            self.log(f"✅ 浏览文章成功 | 积分+{score}")
         else:
-            self.add_message(f'❌ 浏览文章失败， {response_json_["msg"]}')
+            self.log(f'❌ 浏览文章失败: {response["msg"]}')
 
-    # 每日问答
-    def daily_question(self):
-        question_str = ""
-        today_date = datetime.now().strftime("%Y%m%d")
-        params = {
-            "date": today_date,
-        }
-        url = "https://bm2-api.bluemembers.com.cn/v1/app/special/daily/ask_info"
-        response_json = requests.get(url, params=params, headers=self.headers).json()
-        print("daily_question response_json=", response_json)
-        if response_json["code"] == 0:
-            question_info = response_json["data"]["question_info"]
-            questions_hid = question_info["questions_hid"]
-            # 题目
-            question = question_info["content"]
-            print(question)
-            question_str += f"{question}\n"
-            # 选项
-            options = question_info["option"]
-            for option in options:
-                option_content = option["option_content"]
-                print(f'{option["option"]}. {option_content}')
-                question_str += f'{option["option"]}. {option_content}\n'
+    # 答题相关
+    def execute_question_task(self, share_user_hid: str) -> None:
+        """执行答题任务"""
+        params = {"date": datetime.now().strftime("%Y%m%d")}
+        if share_user_hid:
+            params["share_user_hid"] = share_user_hid
 
-            answer = self.get_answer(question_str)
-            time.sleep(random.randint(5, 10))
+        response = self.make_request(
+            "GET", self.API_ENDPOINTS["question_info"], params=params
+        )
+        if response["code"] != 0:
+            self.log(f'❌ 获取问题失败: {response["msg"]}')
+            return
+        # response['data']['state'] 1=表示未答题 2=已答题且正确 4=已答题但错误
+        if response["data"].get("state") != 1:
+            if response["data"].get("answer"):
+                answer = response["data"]["answer"][0]
+                if answer in ["A", "B", "C", "D"]:
+                    self.correct_answer = answer
+                    self.log(f"今日已答题，跳过，答案：{answer}")
+                    return
+            self.log("今日已答题，但未获取到答案，跳过")
+            return
 
-            self.answer_question(questions_hid, answer)
+        question_info = response["data"]["question_info"]
+        questions_hid = question_info["questions_hid"]
 
-    def get_gpt_answer(self, content):
-        choice_base_desc = "你是一个专业的北京现代汽车专家，请直接给出这个单选题的答案，并且不要带'答案'等其他内容。\n"
-        url = "https://api.hunyuan.cloud.tencent.com/v1/chat/completions"
+        # 构建问题字符串
+        question_str = f"{question_info['content']}\n"
+        for option in question_info["option"]:
+            question_str += f'{option["option"]}. {option["option_content"]}\n'
+
+        print(f"问题:\n{question_str}")
+
+        answer = self.get_question_answer(question_str)
+
+        time.sleep(random.randint(5, 10))
+        self.submit_question_answer(questions_hid, answer, share_user_hid)
+
+    def get_ai_answer(self, question: str) -> str:
+        """获取AI答案"""
         headers = {
-            "Authorization": f"Bearer {self.gpt_api_key}",
+            "Authorization": f"Bearer {self.ai_api_key}",
             "Content-Type": "application/json",
         }
+        prompt = f"你是一个专业的北京现代汽车专家，请直接给出这个单选题的答案，并且不要带'答案'等其他内容。\n{question}"
         json_data = {
-            "model": "hunyuan-turbo",
-            "messages": [{"role": "user", "content": f"{choice_base_desc}{content}"}],
+            "model": self.HUNYUAN_MODEL,
+            "messages": [{"role": "user", "content": prompt}],
         }
+
         try:
-            response = requests.post(url, headers=headers, json=json_data)
-            response.raise_for_status()  # 检查响应状态码，如果不是 200，抛出 HTTPError
-            response_json = response.json()
-            extracted_content = response_json["choices"][0]["message"]["content"]
-            if extracted_content in ["A", "B", "C", "D"]:
-                return extracted_content
-            else:
-                print(f"腾讯混元AI 无效的答案: {extracted_content}")
-        except requests.exceptions.RequestException as e:
-            print(f"腾讯混元AI 请求失败: {e}")
-        except ValueError as e:
-            print(f"腾讯混元AI JSON 解析失败: {e}")
-        except KeyError as e:
-            print(f"腾讯混元AI 键不存在: {e}")
+            response = requests.post(
+                self.HUNYUAN_API_URL, headers=headers, json=json_data
+            )
+            response.raise_for_status()
+
+            answer = response.json()["choices"][0]["message"]["content"]
+            if answer in ["A", "B", "C", "D"]:
+                return answer
+
+            print(f"腾讯混元AI 无效答案: {answer}")
+        except Exception as e:
+            print(f"腾讯混元AI 请求失败: {str(e)}")
+
         return ""
 
-    def get_answer(self, question_str):
-        if self.pre_answer:
-            answer = self.pre_answer
-            print(f"使用历史正确答案：{answer}")
-        elif self.gpt_api_key:
-            if self.gpt_answer:
-                answer = self.gpt_answer
-                print(f"使用历史 GPT 答案：{answer}")
+    def get_question_answer(self, question: str) -> str:
+        """获取答题答案"""
+        if self.correct_answer:
+            answer = self.correct_answer
+            self.log(f"使用历史正确答案：{answer}")
+        elif self.ai_api_key:
+            if self.ai_answer:
+                answer = self.ai_answer
+                self.log(f"使用历史 AI 答案：{answer}")
             else:
-                answer = self.get_gpt_answer(question_str)
-                print(f"本次使用 GPT 回答，GPT 给出的答案是：{answer}")
-                if answer == "":
+                answer = self.get_ai_answer(question)
+                if not answer:
                     answer = random.choice(["A", "B", "C", "D"])
-                    print(f"GPT 未返回答案，改为随机答题, 随机选出的答案是: {answer}")
+                    self.log(f"AI 返回答案错误，改为随机答题, 随机答案: {answer}")
                 else:
-                    self.gpt_answer = answer
+                    self.ai_answer = answer
+                    self.log(f"本次使用 AI 回答，答案：{answer}")
         else:
             answer = random.choice(["A", "B", "C", "D"])
-            print(f"本次随机答题, 随机选出的答案是: {answer}")
+            self.log(f"本次随机答题, 随机答案: {answer}")
         return answer
 
-    def answer_question(self, questions_hid, my_answer):
-        print("开始答题")
+    def get_answered_answer(self) -> None:
+        """从已答题账号获取答案"""
+        params = {"date": datetime.now().strftime("%Y%m%d")}
+
+        response = self.make_request(
+            "GET", self.API_ENDPOINTS["question_info"], params=params
+        )
+        if response["code"] != 0:
+            self.log(f'❌ 从已答题账号获取问题失败: {response["msg"]}')
+            return
+        # response['data']['state'] 1=表示未答题 2=已答题且正确 4=已答题但错误
+        if response["code"] == 0 and response["data"].get("answer"):
+            answer = response["data"]["answer"][0]
+            if answer in ["A", "B", "C", "D"]:
+                self.correct_answer = answer
+                self.log(f"从已答题账号获取到答案：{answer}")
+                return
+        self.log("从已答题账号获取答案失败")
+
+    def submit_question_answer(
+        self, question_id: str, answer: str, share_user_hid: str
+    ) -> None:
+        """提交答题答案"""
         json_data = {
-            "answer": my_answer,
-            "questions_hid": questions_hid,
+            "answer": answer,
+            "questions_hid": question_id,
             "ctu_token": "",
+            "date": datetime.now().strftime("%Y%m%d"),
         }
-        url = "https://bm2-api.bluemembers.com.cn/v1/app/special/daily/ask_answer"
-        response_json_ = requests.post(url, headers=self.headers, json=json_data).json()
-        print("answer_question response_json=", response_json_)
-        # response_json= {'code': 0, 'data': {'answer': '', 'answer_score': '', 'state': 3}, 'msg': '', 'title': ''}
-        if response_json_["code"] == 0:
-            if response_json_["data"]["state"] == 3:
-                self.add_message("❌ 答题错误")
-            elif response_json_["data"]["state"] == 2:
-                if self.pre_answer != my_answer:
-                    self.pre_answer = my_answer  # 回答正确，将答案记录下来
-                answer = response_json_["data"]["answer"]  # C.造价低
-                print("answer=", answer)
-                score = response_json_["data"]["answer_score"]
-                print("score=", score)
-                self.add_message(f"✅ 答题正确 | 积分+{score}")
-        else:
-            self.add_message(f'❌ 答题失败, msg: {response_json_["msg"]}')
+        if share_user_hid:
+            json_data["share_user_hid"] = share_user_hid
 
-    def main(self):
-        tokenStr = os.getenv("BJXD")
-        if not tokenStr:
-            self.add_message(
-                f"⛔️ 未获取到 tokens 环境变量：请检查环境变量 BJXD 是否填写"
-            )
+        response = self.make_request(
+            "POST", self.API_ENDPOINTS["question_submit"], json=json_data
+        )
+
+        if response["code"] == 0:
+            data = response["data"]
+            if data["state"] == 3:
+                self.log("❌ 答题错误，尝试从已答题账号获取答案，延时 10-15 秒")
+                time.sleep(random.randint(10, 15))
+                self.get_answered_answer()
+            elif data["state"] == 2:
+                if self.correct_answer != answer:
+                    self.correct_answer = answer
+                score = data["answer_score"]
+                self.log(f"✅ 答题正确 | 积分+{score}")
         else:
-            tokens = tokenStr.split(",")
-            self.add_message(f"👻 共获取到用户 token {len(tokens)} 个")
-            self.gpt_api_key = os.getenv("HUNYUAN_API_KEY")
-            if self.gpt_api_key:
-                self.add_message("💯 已获取到腾讯混元AI APIKey，使用腾讯混元AI答题")
+            self.log(f'❌ 答题失败: {response["msg"]}')
+
+    def run(self) -> None:
+        """运行主程序"""
+        token_str = os.getenv("BJXD")
+        if not token_str:
+            self.log("⛔️ 未获取到 tokens 环境变量：请检查环境变量 BJXD 是否填写")
+            self.push_notification()
+            return
+
+        tokens = token_str.split(",")
+        self.log(f"👻 共获取到用户 token {len(tokens)} 个")
+
+        self.ai_api_key = os.getenv("HUNYUAN_API_KEY", "")
+        self.log(
+            "💯 已获取到腾讯混元AI APIKey，使用腾讯混元AI答题"
+            if self.ai_api_key
+            else "😭 未设置腾讯混元AI HUNYUAN_API_KEY 环境变量，使用随机答题"
+        )
+
+        # 获取所有用户信息
+        for token in tokens:
+            self.headers["token"] = token
+            user = self.fetch_user_info()
+            if user:
+                self.users.append(user)
+
+        # 设置分享用户ID
+        for i, user in enumerate(self.users):
+            next_index = (i + 1) if i + 1 < len(self.users) else 0
+            # 如果只有一个用户或下一个用户是自己，则不设置分享ID
+            if len(self.users) > 1 and self.users[next_index]["hid"] != user["hid"]:
+                user["share_user_hid"] = self.users[next_index]["hid"]
             else:
-                self.add_message(
-                    "😭 未设置腾讯混元AI HUNYUAN_API_KEY 环境变量，使用随机答题"
-                )
+                user["share_user_hid"] = ""
 
-            # 循环遍历 tokens
-            for i, token in enumerate(tokens, start=1):
-                if i > 1:
-                    print("\n进行下一个账号, 等待 10-15 秒...")
+        # 执行任务
+        for i, user in enumerate(self.users, 1):
+            if i > 1:
+                print("\n进行下一个账号, 等待 10-15 秒...")
+                time.sleep(random.randint(10, 15))
+
+            self.log(f"\n======== ▷ 第 {i} 个账号 ◁ ========\n")
+            self.headers["token"] = user["token"]
+
+            # 打印用户信息，手机号中间6位用*隐藏
+            masked_phone = f"{user['phone'][:3]}******{user['phone'][-2:]}"
+            self.log(
+                f"👻 用户名: {user['nickname']} | "
+                f"手机号: {masked_phone} | "
+                f"积分: {user['score_value']}\n"
+                f"🆔 用户hid: {user['hid']}\n"
+                f"🆔 分享hid: {user['share_user_hid']}"
+            )
+
+            # 检查任务状态
+            self.check_task_status(user)
+
+            # 重置任务未完成状态用于单独测试任务
+            # user["task"]["sign"] = False
+            # user["task"]["view"] = False
+            # user["task"]["question"] = False
+
+            # 重置任务完成状态用于单独测试任务跳过任务
+            # user["task"]["sign"] = True
+            # user["task"]["view"] = True
+            # user["task"]["question"] = True
+
+            # 执行未完成的任务
+            if not user["task"]["sign"]:
+                self.log("签到任务 未完成，开始执行任务")
+                self.execute_sign_task()
+                time.sleep(random.randint(10, 15))
+            else:
+                self.log("✅ 签到任务 已完成，跳过")
+
+            if not user["task"]["view"]:
+                self.log("浏览文章任务 未完成，开始执行任务")
+                self.fetch_article_list()
+                for _ in range(3):
+                    self.read_article()
                     time.sleep(random.randint(10, 15))
-                self.add_message(f"\n======== ▷ 第 {i} 个账号 ◁ ========\n")
-                self.headers["token"] = token
-                if self.user_info():
-                    self.do_task()  # 根据任务列表完成请求自动执行任务
-                    self.user_score_info()  # 获取积分信息 统计本次运行新增的积分
-                    # 单独执行 签到任务
-                    # self.do_sign()
-                    # time.sleep(random.randint(10, 15))
-                    # 单独执行 浏览文章任务
-                    # self.article_list()
-                    # for i in range(3):
-                    #     self.view_article()
-                    #     time.sleep(random.randint(10, 15))
-                    # self.article_score_add()
-                    # time.sleep(random.randint(5, 10))
-                    # 单独执行 答题任务
-                    # self.daily_question()
-        self.notify_message()
+                self.submit_article_score()
+                time.sleep(random.randint(5, 10))
+            else:
+                self.log("✅ 浏览文章任务 已完成，跳过")
+
+            if not user["task"]["question"]:
+                self.log("答题任务 未完成，开始执行任务")
+                self.execute_question_task(user["share_user_hid"])
+            else:
+                self.log("✅ 答题任务 已完成，跳过")
+                if not self.correct_answer:
+                    self.get_answered_answer()
+            self.get_score_update(user["score_value"])
+
+        self.push_notification()
 
 
 if __name__ == "__main__":
-    RUN().main()
+    BeiJingHyundai().run()

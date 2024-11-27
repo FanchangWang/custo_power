@@ -14,3 +14,4 @@
 .cxx
 local.properties
 .vscode/launch.json
+ql_script/api.http
