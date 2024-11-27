@@ -16,6 +16,10 @@ from datetime import datetime
 from typing import List, Optional, Dict, Any
 import requests
 from urllib3.exceptions import InsecureRequestWarning, InsecurePlatformWarning
+import os
+import configparser
+from pathlib import Path
+import sys
 
 # 禁用 SSL 警告
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -278,16 +282,13 @@ class BeiJingHyundai:
     def execute_question_task(self, share_user_hid: str) -> None:
         """执行答题任务"""
         params = {"date": datetime.now().strftime("%Y%m%d")}
-        if share_user_hid:
-            params["share_user_hid"] = share_user_hid
-
         response = self.make_request(
             "GET", self.API_ENDPOINTS["question_info"], params=params
         )
         if response["code"] != 0:
             self.log(f'❌ 获取问题失败: {response["msg"]}')
             return
-        # response['data']['state'] 1=表示未答题 2=已答题且正确 4=已答题但错误
+        # response['data']['state'] 1=表示未答题 2=已答题且正确 3=答错且未有人帮忙答题 4=答错但有人帮忙答题
         if response["data"].get("state") != 1:
             if response["data"].get("answer"):
                 answer = response["data"]["answer"][0]
@@ -390,9 +391,9 @@ class BeiJingHyundai:
             "answer": answer,
             "questions_hid": question_id,
             "ctu_token": "",
-            "date": datetime.now().strftime("%Y%m%d"),
         }
         if share_user_hid:
+            json_data["date"] = datetime.now().strftime("%Y%m%d")
             json_data["share_user_hid"] = share_user_hid
 
         response = self.make_request(
@@ -440,10 +441,10 @@ class BeiJingHyundai:
 
         # 设置分享用户ID
         for i, user in enumerate(self.users):
-            next_index = (i + 1) if i + 1 < len(self.users) else 0
-            # 如果只有一个用户或下一个用户是自己，则不设置分享ID
-            if len(self.users) > 1 and self.users[next_index]["hid"] != user["hid"]:
-                user["share_user_hid"] = self.users[next_index]["hid"]
+            prev_index = (i - 1) if i > 0 else len(self.users) - 1
+            # 如果只有一个用户或上一个用户是自己，则不设置分享ID
+            if len(self.users) > 1 and self.users[prev_index]["hid"] != user["hid"]:
+                user["share_user_hid"] = self.users[prev_index]["hid"]
             else:
                 user["share_user_hid"] = ""
 
@@ -468,6 +469,7 @@ class BeiJingHyundai:
 
             # 检查任务状态
             self.check_task_status(user)
+            self.log(f"任务状态: {user['task']}")
 
             # 重置任务未完成状态用于单独测试任务
             # user["task"]["sign"] = False
@@ -511,4 +513,31 @@ class BeiJingHyundai:
 
 
 if __name__ == "__main__":
+    # 获取可执行文件所在目录
+    if getattr(sys, "frozen", False):
+        current_dir = Path(sys.executable).parent
+    else:
+        current_dir = Path(__file__).resolve().parent
+    env_file = current_dir.joinpath("env.ini")
+
+    if env_file.exists():
+        config = configparser.ConfigParser()
+        # 使用 utf-8 编码读取配置文件
+        config.read(env_file, encoding="utf-8")
+
+        # 读取并设置token
+        if config.has_option("app", "tokens") and config["app"]["tokens"].strip():
+            os.environ["BJXD"] = config["app"]["tokens"].strip()
+
+        # 读取并设置api_key
+        if (
+            config.has_option("app", "hunyuan_api_key")
+            and config["app"]["hunyuan_api_key"].strip()
+        ):
+            os.environ["HUNYUAN_API_KEY"] = config["app"]["hunyuan_api_key"].strip()
+
     BeiJingHyundai().run()
+
+    # 判断是否为打包后的可执行程序
+    if getattr(sys, "frozen", False):
+        input("\n程序执行完毕，按任意键退出...")
