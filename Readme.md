@@ -1,33 +1,62 @@
-## 适用车型
-北京现代 库斯途车机
+# Beijing Hyundai Custo
 
-## 安装说明
-请自行搜索侧边栏破解教程或者使用 adb install 安装，[Releases](https://github.com/FanchangWang/custo_power/releases) 中的 apk 是已经公签好的。
+北京现代库斯途车机相关 APK 软件及 Python 自动任务脚本。
 
-## 功能列表
-- 1、打开原生设置
-- 2、切换 百度 CarLife USB/WIFI 连接模式。(切换之后，关闭 CarLife 重新打开即可生效)
-- 3、切换 USB HOST/DEVICE 模式
-- 4、重启车机系统
-- 5、重启车机到 Recovery 模式(这个貌似没啥用)
+## APK 软件说明
 
-## 其他原车应用修改版
-- 1、百度 Carlife
-    + 修改 竖屏全屏模式
-    + 修改 版本号
+### 1. Power.apk 功能说明
+- 打开原生设置
+- 切换百度 CarLife 连接模式 (USB/WIFI)
+- 切换 USB 模式 (HOST/DEVICE)
+- 系统重启
+  - 普通重启
+  - Recovery 模式重启
 
-## 青龙面板：北京现代 APP 自动任务脚本
-原作者 https://github.com/xiaobu689/HhhhScripts 我修改了部分代码以适配青龙面板。
-脚本源码 [bjxd.py](./ql_script/bjxd.py) 支持以下环境变量
+### 2. 原车应用 百度CarLife 修改版
+- 竖屏全屏显示
 
+## APK 安装教程
+从 [Releases](https://github.com/FanchangWang/custo_power/releases) 下载已公签的 APK，通过侧边栏破解安装，[侧边栏破解教程(ix35跟库斯途通用)](https://www.dongchedi.com/ugc/article/7230446621241344524)
+
+
+## Python 自动任务脚本
+基于 [@xiaobu689/HhhhScripts](https://github.com/xiaobu689/HhhhScripts) 修改，适配青龙面板。
+
+**功能：**
+- 日常签到
+- 浏览文章
+- 每日答题
+- 答题转发（配置多个账号时，多个账号之间互相转发）
+
+#### Token 获取教程
+- 方式 1. 浏览器打开 https://bm2-wx.bluemembers.com.cn/browser/login 登录账号后，在开发人员工具的控制台执行 `console.log(localStorage.getItem('token'))` 获取。
+- 方式 2. 通过 [ql_script/gui.py](./ql_script/gui.py) 脚本工具获取。
+    + 运行方式：`python3 gui.py`
+    + 依赖要求：`Python3` `PyQt5` `PyQtWebEngine`
+
+#### 环境变量配置
 ```shell
-BJXD="token1,token2,token3" // 北京现代 APP api token // 多个账号用英文 , 分割
-
-HUNYUAN_API_KEY="sk-xxxx" // 腾讯混元大模型 APIKey
+# 北京现代 APP token (多账号用英文逗号分隔)
+export BJXD="token1,token2,token3"
+# 腾讯混元AI APIKey (可选，用于获取每日答题答案，不配置则随机答题)
+export HUNYUAN_API_KEY="sk-xxxx"
 ```
 
-青龙导入方式
+#### 运行方式
 
- ```shell
- ql raw https://raw.githubusercontent.com/FanchangWang/custo_power/refs/heads/main/ql_script/bjxd.py
- ```
+方式 1. 下载 [ql_script/bjxd.py](./ql_script/bjxd.py) 文件，本地运行
+```shell
+python3 bjxd.py
+```
+
+方式 2. 青龙面板单文件导入
+```shell
+ql raw https://raw.githubusercontent.com/FanchangWang/custo_power/refs/heads/main/ql_script/bjxd.py
+```
+
+#### 依赖要求
+- Python3
+- requests
+
+## 致谢
+感谢 [@xiaobu689](https://github.com/xiaobu689) 提供的原始脚本。
