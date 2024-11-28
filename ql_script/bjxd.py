@@ -34,6 +34,7 @@ class BeiJingHyundai:
     BASE_URL = "https://bm2-api.bluemembers.com.cn"
     API_ENDPOINTS = {
         "user_info": "/v1/app/account/users/info",
+        "my_score": "/v1/app/user/my_score",
         "task_list": "/v1/app/user/task/list",
         "sign_list": "/v1/app/user/reward_list",
         "sign_submit": "/v1/app/user/reward_report",
@@ -131,11 +132,13 @@ class BeiJingHyundai:
 
         if response["code"] == 0:
             data = response["data"]
+            # 直接生成掩码后的手机号
+            masked_phone = f"{data['phone'][:3]}******{data['phone'][-2:]}"
             return {
                 "token": self.headers["token"],
                 "hid": data["hid"],
                 "nickname": data["nickname"],
-                "phone": data["phone"],
+                "phone": masked_phone,  # 直接存储掩码后的手机号
                 "score_value": data["score_value"],
                 "share_user_hid": "",
                 "task": {"sign": False, "view": False, "question": False},
@@ -144,16 +147,33 @@ class BeiJingHyundai:
         self.log(f"❌ 账号已失效，请重新抓包；token: {self.headers['token']}")
         return {}
 
-    def get_score_update(self, initial_score: int) -> None:
-        """获取积分更新"""
-        response = self.make_request("GET", self.API_ENDPOINTS["user_info"])
+    def show_score_details(self) -> None:
+        """显示积分详情，包括总积分、今日变动和最近记录"""
+        params = {"page_no": "1", "page_size": "5"}  # 获取最近5条记录
+        response = self.make_request(
+            "GET", self.API_ENDPOINTS["my_score"], params=params
+        )
 
         if response["code"] == 0:
             data = response["data"]
-            diff_score = data["score_value"] - initial_score
-            self.log(
-                f"🎉 总积分: {data['score_value']} | " f"本次运行新增积分: {diff_score}"
+            today = datetime.now().strftime("%Y-%m-%d")
+
+            # 计算今日积分变化（包括增加和减少）
+            today_score = sum(
+                int(record["score_str"].strip("+"))
+                for record in data["points_record"]["list"]
+                if record["created_at"].startswith(today)
             )
+
+            # 根据正负值使用不同符号
+            today_score_str = f"+{today_score}" if today_score > 0 else str(today_score)
+            self.log(f"🎉 总积分: {data['score']} | 今日积分变动: {today_score_str}")
+
+            # 输出最近的积分记录
+            for record in data["points_record"]["list"]:
+                self.log(
+                    f"{record['created_at']} {record['desc']} {record['score_str']}"
+                )
 
     # 任务相关
     def check_task_status(self, user: Dict[str, Any]) -> None:
@@ -215,8 +235,12 @@ class BeiJingHyundai:
                     print(f"当前可获得签到积分: {best_score}")
                     break
 
-            print(f"继续尝试获取更高积分，延时20-30s")
-            time.sleep(random.randint(20, 30))
+            if attempt < max_attempts - 1:  # 不是最后一次循环
+                print(f"继续尝试获取更高积分，延时20-30s")
+                time.sleep(random.randint(20, 30))
+            else:  # 最后一次循环 即将提交签到
+                print(f"即将提交签到，延时3-4s")
+                time.sleep(random.randint(3, 4))
 
         if best_params:
             self.submit_sign(*best_params)
@@ -473,19 +497,19 @@ class BeiJingHyundai:
                 user["share_user_hid"] = self.get_backup_share_hid(user["hid"])
 
         # 执行任务
+        self.log("\n============ 执行任务 ============")
         for i, user in enumerate(self.users, 1):
             if i > 1:
                 print("\n进行下一个账号, 等待 10-15 秒...")
                 time.sleep(random.randint(10, 15))
 
-            self.log(f"\n======== ▷ 第 {i} 个账号 ◁ ========\n")
+            self.log(f"\n======== ▷ 第 {i} 个账号 ◁ ========")
             self.headers["token"] = user["token"]
 
-            # 打印用户信息，手机号中间6位用*隐藏
-            masked_phone = f"{user['phone'][:3]}******{user['phone'][-2:]}"
+            # 打印用户信息
             self.log(
                 f"👻 用户名: {user['nickname']} | "
-                f"手机号: {masked_phone} | "
+                f"手机号: {user['phone']} | "
                 f"积分: {user['score_value']}\n"
                 f"🆔 用户hid: {user['hid']}\n"
                 f"🆔 分享hid: {user['share_user_hid']}"
@@ -531,8 +555,21 @@ class BeiJingHyundai:
                 self.log("✅ 答题任务 已完成，跳过")
                 if not self.correct_answer:
                     self.get_answered_answer()
-            self.get_score_update(user["score_value"])
 
+        self.log("\n============ 积分详情 ============")
+        for i, user in enumerate(self.users, 1):
+            self.log(f"\n======== ▷ 第 {i} 个账号 ◁ ========")
+
+            # 设置当前用户的 token
+            self.headers["token"] = user["token"]
+
+            # 打印用户信息
+            self.log(f"👻 用户名: {user['nickname']} | 手机号: {user['phone']}")
+
+            # 显示积分详情
+            self.show_score_details()
+
+        # 最后推送通知
         self.push_notification()
 
 
