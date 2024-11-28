@@ -54,6 +54,12 @@ class BeiJingHyundai:
     HUNYUAN_API_URL = "https://api.hunyuan.cloud.tencent.com/v1/chat/completions"
     HUNYUAN_MODEL = "hunyuan-turbo"
 
+    # 预设的备用 share_user_hid 列表
+    BACKUP_HIDS = [
+        "bb8cd2e44c7b45eeb8cc5f7fa71c3322",
+        "5f640c50061b400c91be326c8fe0accd",
+    ]
+
     def __init__(self):
         """初始化实例变量"""
         self.article_ids: List[str] = []
@@ -63,6 +69,8 @@ class BeiJingHyundai:
         self.log_content: str = ""
         self.users: List[Dict[str, Any]] = []
         self.headers: Dict[str, str] = self.DEFAULT_HEADERS.copy()
+        self.ai_failed: bool = False
+        self.wrong_answers: set = set()
 
     def log(self, content: str, print_to_console: bool = True) -> None:
         """添加日志"""
@@ -347,22 +355,30 @@ class BeiJingHyundai:
         if self.correct_answer:
             answer = self.correct_answer
             self.log(f"使用历史正确答案：{answer}")
-        elif self.ai_api_key:
+        elif self.ai_api_key and not self.ai_failed:
             if self.ai_answer:
                 answer = self.ai_answer
                 self.log(f"使用历史 AI 答案：{answer}")
             else:
                 answer = self.get_ai_answer(question)
                 if not answer:
-                    answer = random.choice(["A", "B", "C", "D"])
+                    answer = self.get_random_answer()
                     self.log(f"AI 返回答案错误，改为随机答题, 随机答案: {answer}")
                 else:
                     self.ai_answer = answer
                     self.log(f"本次使用 AI 回答，答案：{answer}")
         else:
-            answer = random.choice(["A", "B", "C", "D"])
+            answer = self.get_random_answer()
             self.log(f"本次随机答题, 随机答案: {answer}")
         return answer
+
+    def get_random_answer(self) -> str:
+        """获取随机答案，排除已知错误答案"""
+        available_answers = set(["A", "B", "C", "D"]) - self.wrong_answers
+        if not available_answers:
+            self.wrong_answers.clear()
+            available_answers = set(["A", "B", "C", "D"])
+        return random.choice(list(available_answers))
 
     def get_answered_answer(self) -> None:
         """从已答题账号获取答案"""
@@ -403,9 +419,11 @@ class BeiJingHyundai:
         if response["code"] == 0:
             data = response["data"]
             if data["state"] == 3:
-                self.log("❌ 答题错误，尝试从已答题账号获取答案，延时 10-15 秒")
-                time.sleep(random.randint(10, 15))
-                self.get_answered_answer()
+                self.wrong_answers.add(answer)
+                if self.ai_answer == answer:
+                    self.ai_failed = True
+                    self.ai_answer = ""
+                self.log("❌ 答题错误")
             elif data["state"] == 2:
                 if self.correct_answer != answer:
                     self.correct_answer = answer
@@ -413,6 +431,11 @@ class BeiJingHyundai:
                 self.log(f"✅ 答题正确 | 积分+{score}")
         else:
             self.log(f'❌ 答题失败: {response["msg"]}')
+
+    def get_backup_share_hid(self, user_hid: str) -> str:
+        """从备用 hid 列表中获取一个不同于用户自身的 hid"""
+        available_hids = [hid for hid in self.BACKUP_HIDS if hid != user_hid]
+        return random.choice(available_hids) if available_hids else ""
 
     def run(self) -> None:
         """运行主程序"""
@@ -442,11 +465,12 @@ class BeiJingHyundai:
         # 设置分享用户ID
         for i, user in enumerate(self.users):
             prev_index = (i - 1) if i > 0 else len(self.users) - 1
-            # 如果只有一个用户或上一个用户是自己，则不设置分享ID
+            # 如果有多个用户且上一个用户不是自己，使用上一个用户的 hid
             if len(self.users) > 1 and self.users[prev_index]["hid"] != user["hid"]:
                 user["share_user_hid"] = self.users[prev_index]["hid"]
             else:
-                user["share_user_hid"] = ""
+                # 否则从备用 hid 列表中选择一个
+                user["share_user_hid"] = self.get_backup_share_hid(user["hid"])
 
         # 执行任务
         for i, user in enumerate(self.users, 1):
