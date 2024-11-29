@@ -156,24 +156,30 @@ class BeiJingHyundai:
 
         if response["code"] == 0:
             data = response["data"]
+            # 先获取今日记录
             today = datetime.now().strftime("%Y-%m-%d")
-
-            # 计算今日积分变化（包括增加和减少）
-            today_score = sum(
-                int(record["score_str"].strip("+"))
+            today_records = [
+                record
                 for record in data["points_record"]["list"]
                 if record["created_at"].startswith(today)
-            )
+            ]
 
-            # 根据正负值使用不同符号
+            # 计算今日积分变化
+            today_score = sum(
+                int(record["score_str"].strip("+")) for record in today_records
+            )
             today_score_str = f"+{today_score}" if today_score > 0 else str(today_score)
             self.log(f"🎉 总积分: {data['score']} | 今日积分变动: {today_score_str}")
 
-            # 输出最近的积分记录
-            for record in data["points_record"]["list"]:
-                self.log(
-                    f"{record['created_at']} {record['desc']} {record['score_str']}"
-                )
+            # 输出今日积分记录
+            if today_records:
+                self.log("今日积分记录：")
+                for record in today_records:
+                    self.log(
+                        f"{record['created_at']} {record['desc']} {record['score_str']}"
+                    )
+            else:
+                self.log("今日暂无积分变动")
 
     # 任务相关
     def check_task_status(self, user: Dict[str, Any]) -> None:
