@@ -365,6 +365,9 @@ class BeiJingHyundai:
         json_data = {
             "model": self.HUNYUAN_MODEL,
             "messages": [{"role": "user", "content": prompt}],
+            "enable_enhancement": True,
+            "force_search_enhancement": True,
+            "enable_instruction_search": True,
         }
 
         try:
