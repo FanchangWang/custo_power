@@ -3,7 +3,9 @@
 功能：自动完成签到、浏览文章、每日答题等任务
 
 环境变量：
-    BJXD: str - 北京现代 APP api token (多个账号用英文逗号分隔)
+    BJXD: str - 北京现代 APP api token (多个账号用英文逗号分隔，建议每个账号一个变量)
+    BJXD1/BJXD2/BJXD3: str - 北京现代 APP api token (每个账号一个变量)
+    BJXD_ANSWER: str - 预设答案 (可选, ABCD 中的一个)
     HUNYUAN_API_KEY: str - 腾讯混元AI APIKey (可选)
 
 cron: 25 6 * * *
@@ -64,14 +66,15 @@ class BeiJingHyundai:
     def __init__(self):
         """初始化实例变量"""
         self.article_ids: List[str] = []
-        self.ai_api_key: str = ""
-        self.ai_answer: str = ""
-        self.correct_answer: str = ""
-        self.log_content: str = ""
-        self.users: List[Dict[str, Any]] = []
-        self.headers: Dict[str, str] = self.DEFAULT_HEADERS.copy()
-        self.ai_failed: bool = False
-        self.wrong_answers: set = set()
+        self.correct_answer: str = ""  # 正确答案
+        self.preset_answer: str = ""  # 新增: 预设答案
+        self.ai_api_key: str = ""  # 腾讯混元AI APIKey
+        self.ai_answer: str = ""  # 腾讯混元AI 答案
+        self.wrong_answers: set = set()  # 错误答案集合
+        self.log_content: str = ""  # 日志内容
+        self.users: List[Dict[str, Any]] = []  # 用户信息列表
+        self.headers: Dict[str, str] = self.DEFAULT_HEADERS.copy()  # HTTP 请求头
+        self.ai_failed: bool = False  # 腾讯混元AI 答题失败
 
     def log(self, content: str, print_to_console: bool = True) -> None:
         """添加日志"""
@@ -242,8 +245,8 @@ class BeiJingHyundai:
                     break
 
             if attempt < max_attempts - 1:  # 不是最后一次循环
-                print(f"继续尝试获取更高积分，延时20-30s")
-                time.sleep(random.randint(20, 30))
+                print(f"继续尝试获取更高积分，延时5-10s")
+                time.sleep(random.randint(5, 10))
             else:  # 最后一次循环 即将提交签到
                 print(f"即将提交签到，延时3-4s")
                 time.sleep(random.randint(3, 4))
@@ -349,7 +352,7 @@ class BeiJingHyundai:
 
         answer = self.get_question_answer(question_str)
 
-        time.sleep(random.randint(5, 10))
+        time.sleep(random.randint(3, 5))
         self.submit_question_answer(questions_hid, answer, share_user_hid)
 
     def get_ai_answer(self, question: str) -> str:
@@ -385,6 +388,9 @@ class BeiJingHyundai:
         if self.correct_answer:
             answer = self.correct_answer
             self.log(f"使用历史正确答案：{answer}")
+        elif self.preset_answer:  # 新增: 使用预设答案
+            answer = self.preset_answer
+            self.log(f"使用预设答案：{answer}")
         elif self.ai_api_key and not self.ai_failed:
             if self.ai_answer:
                 answer = self.ai_answer
@@ -450,9 +456,12 @@ class BeiJingHyundai:
             data = response["data"]
             if data["state"] == 3:
                 self.wrong_answers.add(answer)
-                if self.ai_answer == answer:
+                if self.ai_answer == answer:  # 腾讯混元AI 答案错误
                     self.ai_failed = True
                     self.ai_answer = ""
+                if self.preset_answer == answer:  # 新增: 清除错误的预设答案
+                    self.preset_answer = ""
+                    self.log("❌ 预设答案错误，已清除")
                 self.log("❌ 答题错误")
             elif data["state"] == 2:
                 if self.correct_answer != answer:
@@ -469,13 +478,32 @@ class BeiJingHyundai:
 
     def run(self) -> None:
         """运行主程序"""
+        tokens = []
+
+        # 方式1: 从BJXD环境变量获取(逗号分隔的多个token)
         token_str = os.getenv("BJXD")
-        if not token_str:
-            self.log("⛔️ 未获取到 tokens 环境变量：请检查环境变量 BJXD 是否填写")
+        if token_str:
+            tokens.extend(token_str.split(","))
+
+        # 方式2: 从BJXD1/BJXD2/BJXD3等环境变量获取
+        i = 1
+        empty_count = 0  # 记录连续空值的数量
+        while empty_count < 5:  # 连续5个空值才退出
+            token = os.getenv(f"BJXD{i}")
+            if not token:
+                empty_count += 1
+            else:
+                empty_count = 0  # 重置连续空值计数
+                tokens.append(token)
+            i += 1
+
+        if not tokens:
+            self.log(
+                "⛔️ 未获取到 tokens：请检查环境变量 BJXD 或 BJXD1/BJXD2/... 是否填写"
+            )
             self.push_notification()
             return
 
-        tokens = token_str.split(",")
         self.log(f"👻 共获取到用户 token {len(tokens)} 个")
 
         self.ai_api_key = os.getenv("HUNYUAN_API_KEY", "")
@@ -484,6 +512,15 @@ class BeiJingHyundai:
             if self.ai_api_key
             else "😭 未设置腾讯混元AI HUNYUAN_API_KEY 环境变量，使用随机答题"
         )
+
+        # 获取预设答案
+        self.preset_answer = os.getenv("BJXD_ANSWER", "").upper()
+        if self.preset_answer:
+            if self.preset_answer in ["A", "B", "C", "D"]:
+                self.log(f"📝 已获取预设答案: {self.preset_answer}")
+            else:
+                self.preset_answer = ""
+                self.log("❌ 预设答案格式错误，仅支持 A/B/C/D")
 
         # 获取所有用户信息
         for token in tokens:
@@ -506,8 +543,8 @@ class BeiJingHyundai:
         self.log("\n============ 执行任务 ============")
         for i, user in enumerate(self.users, 1):
             if i > 1:
-                print("\n进行下一个账号, 等待 10-15 秒...")
-                time.sleep(random.randint(10, 15))
+                print("\n进行下一个账号, 等待 5-10 秒...")
+                time.sleep(random.randint(5, 10))
 
             self.log(f"\n======== ▷ 第 {i} 个账号 ◁ ========")
             self.headers["token"] = user["token"]
@@ -539,7 +576,7 @@ class BeiJingHyundai:
             if not user["task"]["sign"]:
                 self.log("签到任务 未完成，开始执行任务")
                 self.execute_sign_task()
-                time.sleep(random.randint(10, 15))
+                time.sleep(random.randint(5, 10))
             else:
                 self.log("✅ 签到任务 已完成，跳过")
 
@@ -564,6 +601,10 @@ class BeiJingHyundai:
 
         self.log("\n============ 积分详情 ============")
         for i, user in enumerate(self.users, 1):
+            if i > 1:
+                print("\n进行下一个账号, 等待 5-10 秒...")
+                time.sleep(random.randint(5, 10))
+
             self.log(f"\n======== ▷ 第 {i} 个账号 ◁ ========")
 
             # 设置当前用户的 token
@@ -580,31 +621,4 @@ class BeiJingHyundai:
 
 
 if __name__ == "__main__":
-    # 获取可执行文件所在目录
-    if getattr(sys, "frozen", False):
-        current_dir = Path(sys.executable).parent
-    else:
-        current_dir = Path(__file__).resolve().parent
-    env_file = current_dir.joinpath("env.ini")
-
-    if env_file.exists():
-        config = configparser.ConfigParser()
-        # 使用 utf-8 编码读取配置文件
-        config.read(env_file, encoding="utf-8")
-
-        # 读取并设置token
-        if config.has_option("app", "tokens") and config["app"]["tokens"].strip():
-            os.environ["BJXD"] = config["app"]["tokens"].strip()
-
-        # 读取并设置api_key
-        if (
-            config.has_option("app", "hunyuan_api_key")
-            and config["app"]["hunyuan_api_key"].strip()
-        ):
-            os.environ["HUNYUAN_API_KEY"] = config["app"]["hunyuan_api_key"].strip()
-
     BeiJingHyundai().run()
-
-    # 判断是否为打包后的可执行程序
-    if getattr(sys, "frozen", False):
-        input("\n程序执行完毕，按任意键退出...")
