@@ -5,72 +5,140 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="20dp"
+    android:paddingLeft="10dp"
+    android:paddingRight="10dp"
     tools:context=".MainActivity">
 
-    <Button
-        android:id="@+id/btn_open_setting"
-        android:layout_width="wrap_content"
+    <!-- Carlife 相关 -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
-        android:text="打开原生系统设置"
-        tools:ignore="HardcodedText" />
+        android:gravity="center_vertical">
 
-    <Button
-        android:id="@+id/btn_carlife_usb"
-        android:layout_width="wrap_content"
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="fill"
+            android:text="百度 Carlife"
+            android:textSize="16sp"
+            tools:ignore="HardcodedText" />
+
+        <Button
+            android:id="@+id/btn_carlife_usb"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="USB"
+            tools:ignore="HardcodedText" />
+
+        <Button
+            android:id="@+id/btn_carlife_wifi"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="WIFI"
+            tools:ignore="HardcodedText" />
+    </LinearLayout>
+
+    <!-- USB 模式相关 -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
-        android:text="切换 CarLife USB"
-        tools:ignore="HardcodedText" />
+        android:gravity="center_vertical">
 
-    <Button
-        android:id="@+id/btn_carlife_wifi"
-        android:layout_width="wrap_content"
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="fill"
+            android:text="USB 模式"
+            android:textSize="16sp"
+            tools:ignore="HardcodedText" />
+
+        <Button
+            android:id="@+id/btn_usb_host"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="HOST"
+            tools:ignore="HardcodedText" />
+
+        <Button
+            android:id="@+id/btn_usb_device"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="DEVICE"
+            tools:ignore="HardcodedText" />
+    </LinearLayout>
+
+    <!-- 重启相关 -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
-        android:text="切换 CarLife WIFI"
-        tools:ignore="HardcodedText" />
+        android:gravity="center_vertical">
 
-    <Button
-        android:id="@+id/btn_usb_host"
-        android:layout_width="wrap_content"
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="fill"
+            android:text="重启车机"
+            android:textSize="16sp"
+            tools:ignore="HardcodedText" />
+
+        <Button
+            android:id="@+id/btn_reboot_os"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="系统"
+            tools:ignore="HardcodedText" />
+
+        <Button
+            android:id="@+id/btn_reboot_rec"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Recovery"
+            tools:ignore="HardcodedText" />
+    </LinearLayout>
+
+    <!-- 其他功能 -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
-        android:text="切换 USB HOST MODE"
-        tools:ignore="HardcodedText" />
+        android:gravity="center_vertical">
 
-    <Button
-        android:id="@+id/btn_usb_device"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:text="切换 USB DEVICE MODE"
-        tools:ignore="HardcodedText" />
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="fill"
+            android:text="其他功能"
+            android:textSize="16sp"
+            tools:ignore="HardcodedText" />
 
-    <Button
-        android:id="@+id/btn_reboot_os"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:text="重启车机系统"
-        tools:ignore="HardcodedText" />
+        <Button
+            android:id="@+id/btn_open_setting"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="原生设置"
+            tools:ignore="HardcodedText" />
 
-    <Button
-        android:id="@+id/btn_reboot_rec"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:text="重启到 Recovery"
-        tools:ignore="HardcodedText" />
-
-    <Button
-        android:id="@+id/btn_finish"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:text="退出应用"
-        tools:ignore="HardcodedText" />
-
+        <Button
+            android:id="@+id/btn_finish"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="退出应用"
+            tools:ignore="HardcodedText" />
+    </LinearLayout>
 
 </LinearLayout>
