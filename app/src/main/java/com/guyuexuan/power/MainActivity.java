@@ -1,21 +1,16 @@
 package com.guyuexuan.power;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.provider.Settings;
-import android.util.DisplayMetrics;
-import android.view.Window;
-import android.widget.TextView;
 import android.widget.Toast;
 
-
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 
 public class MainActivity extends Activity {
 
@@ -26,12 +21,22 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         // 读取数据
-//        findViewById(R.id.btn_read).setOnClickListener(v -> initRead());
+        // findViewById(R.id.btn_read).setOnClickListener(v -> initRead());
 
-        // 打开原生系统设置
-        findViewById(R.id.btn_open_setting).setOnClickListener(v -> {
-            Intent intent = new Intent(Settings.ACTION_SETTINGS);
-            startActivity(intent);
+        // 开机启动 CarLife
+        findViewById(R.id.btn_auto_enabled).setOnClickListener(v -> {
+            ComponentName receiver = new ComponentName(this, BootReceiver.class);
+            getPackageManager().setComponentEnabledSetting(receiver,
+                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
+            Toast.makeText(MainActivity.this, "开机启动 Carlife！", Toast.LENGTH_SHORT).show();
+        });
+
+        // 停止开机启动 CarLife
+        findViewById(R.id.btn_auto_disabled).setOnClickListener(v -> {
+            ComponentName receiver = new ComponentName(this, BootReceiver.class);
+            getPackageManager().setComponentEnabledSetting(receiver,
+                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
+            Toast.makeText(MainActivity.this, "开机启动 已停止！", Toast.LENGTH_SHORT).show();
         });
 
         // 切换 CarLife USB
@@ -109,62 +114,73 @@ public class MainActivity extends Activity {
             }
         });
 
+        // 打开原生系统设置
+        findViewById(R.id.btn_open_setting).setOnClickListener(v -> {
+            Intent intent = new Intent(Settings.ACTION_SETTINGS);
+            startActivity(intent);
+        });
+
         // 退出软件
         findViewById(R.id.btn_finish).setOnClickListener(v -> finishAffinity());
 
     }
 
-//    @SuppressLint("SetTextI18n")
-//    private void initRead() {
-//
-//        // 读取屏幕分辨率
-//        DisplayMetrics displayMetrics = new DisplayMetrics();
-//        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-//        int screenWidth = displayMetrics.widthPixels;
-//        int screenHeight = displayMetrics.heightPixels;
-//
-//        System.out.println("屏幕分辨率: " + screenWidth + " x " + screenHeight);
-//
-//        // 读取带标题栏的应用分辨率
-//        int appWithTitleBarWidth = getWindow().getDecorView().getWidth();
-//        int appWithTitleBarHeight = getWindow().getDecorView().getHeight();
-//
-//        System.out.println("应用带标题栏分辨率: " + appWithTitleBarWidth + " x " + appWithTitleBarHeight);
-//
-//        // 读取不带标题栏的应用分辨率
-//        int appNoTitleBarWidth = getWindow().findViewById(Window.ID_ANDROID_CONTENT).getWidth();
-//        int appNoTitleBarHeight = getWindow().findViewById(Window.ID_ANDROID_CONTENT).getHeight();
-//
-//        System.out.println("应用不带标题栏分辨率: " + appNoTitleBarWidth + " x " + appNoTitleBarHeight);
-//
-//        String filePath = "/sys/class/gpio/gpio22/value";
-//        BufferedReader reader = null;
-//        String line = "读取失败";
-//
-//        try {
-//            reader = new BufferedReader(new FileReader(filePath));
-//            line = reader.readLine();
-//            while (line != null) {
-//                System.out.println(line);
-//                line = reader.readLine();
-//            }
-//        } catch (Throwable e) {
-//            e.printStackTrace();
-//        } finally {
-//            if (reader != null) {
-//                try {
-//                    reader.close();
-//                } catch (Throwable e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//        }
-//
-//        ((TextView) findViewById(R.id.textView)).setText("屏幕宽高：" + screenWidth + " x " + screenHeight
-//                + "\n应用宽高：" + appWithTitleBarWidth + " x " + appWithTitleBarHeight
-//                + "\n正文宽高：" + appNoTitleBarWidth + " x " + appNoTitleBarHeight
-//                + "\nUSB 模式：" + line);
-//    }
+    // @SuppressLint("SetTextI18n")
+    // private void initRead() {
+    //
+    // // 读取屏幕分辨率
+    // DisplayMetrics displayMetrics = new DisplayMetrics();
+    // getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+    // int screenWidth = displayMetrics.widthPixels;
+    // int screenHeight = displayMetrics.heightPixels;
+    //
+    // System.out.println("屏幕分辨率: " + screenWidth + " x " + screenHeight);
+    //
+    // // 读取带标题栏的应用分辨率
+    // int appWithTitleBarWidth = getWindow().getDecorView().getWidth();
+    // int appWithTitleBarHeight = getWindow().getDecorView().getHeight();
+    //
+    // System.out.println("应用带标题栏分辨率: " + appWithTitleBarWidth + " x " +
+    // appWithTitleBarHeight);
+    //
+    // // 读取不带标题栏的应用分辨率
+    // int appNoTitleBarWidth =
+    // getWindow().findViewById(Window.ID_ANDROID_CONTENT).getWidth();
+    // int appNoTitleBarHeight =
+    // getWindow().findViewById(Window.ID_ANDROID_CONTENT).getHeight();
+    //
+    // System.out.println("应用不带标题栏分辨率: " + appNoTitleBarWidth + " x " +
+    // appNoTitleBarHeight);
+    //
+    // String filePath = "/sys/class/gpio/gpio22/value";
+    // BufferedReader reader = null;
+    // String line = "读取失败";
+    //
+    // try {
+    // reader = new BufferedReader(new FileReader(filePath));
+    // line = reader.readLine();
+    // while (line != null) {
+    // System.out.println(line);
+    // line = reader.readLine();
+    // }
+    // } catch (Throwable e) {
+    // e.printStackTrace();
+    // } finally {
+    // if (reader != null) {
+    // try {
+    // reader.close();
+    // } catch (Throwable e) {
+    // e.printStackTrace();
+    // }
+    // }
+    // }
+    //
+    // ((TextView) findViewById(R.id.textView)).setText("屏幕宽高：" + screenWidth + " x
+    // " + screenHeight
+    // + "\n应用宽高：" + appWithTitleBarWidth + " x " + appWithTitleBarHeight
+    // + "\n正文宽高：" + appNoTitleBarWidth + " x " + appNoTitleBarHeight
+    // + "\nUSB 模式：" + line);
+    // }
 
     public static class SystemProperties {
         private static final Class<?> SP = getSystemPropertiesClass();
