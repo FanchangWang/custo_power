@@ -3,6 +3,7 @@ package com.guyuexuan.power;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
+import android.content.SharedPreferences.Editor;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.PowerManager;
@@ -39,16 +40,22 @@ public class MainActivity extends Activity {
             Toast.makeText(MainActivity.this, "开机启动 已停止！", Toast.LENGTH_SHORT).show();
         });
 
-        // 切换 CarLife USB
+        // 切换 CarLife USB & 自启时机 开机
         findViewById(R.id.btn_carlife_usb).setOnClickListener(v -> {
             Settings.System.putInt(getContentResolver(), "CarLifeConnection", 0);
-            Toast.makeText(MainActivity.this, "切换 CarLife 连接方式！USB", Toast.LENGTH_SHORT).show();
+            Editor editor = getSharedPreferences("CarLifeConfig", MODE_PRIVATE).edit();
+            editor.putString("startTime", "boot");
+            editor.apply();
+            Toast.makeText(MainActivity.this, "CarLife 连接方式: USB, 自启时机: 开机", Toast.LENGTH_SHORT).show();
         });
 
-        // 切换 CarLife WIFI
+        // 切换 CarLife WIFI & 自启时机 蓝牙
         findViewById(R.id.btn_carlife_wifi).setOnClickListener(v -> {
             Settings.System.putInt(getContentResolver(), "CarLifeConnection", 1);
-            Toast.makeText(MainActivity.this, "切换 CarLife 连接方式！WIFI", Toast.LENGTH_SHORT).show();
+            Editor editor = getSharedPreferences("CarLifeConfig", MODE_PRIVATE).edit();
+            editor.putString("startTime", "bluetooth");
+            editor.apply();
+            Toast.makeText(MainActivity.this, "CarLife 连接方式: WIFI, 自启时机: 蓝牙", Toast.LENGTH_SHORT).show();
         });
 
         // 切换 USB HOST MODE
@@ -185,6 +192,10 @@ public class MainActivity extends Activity {
     public static class SystemProperties {
         private static final Class<?> SP = getSystemPropertiesClass();
 
+        private SystemProperties() {
+            throw new AssertionError("No instances");
+        }
+
         public static void set(String key, String val) {
             if (SP == null) {
                 throw new IllegalStateException("SystemProperties class 反射错误.");
@@ -205,10 +216,6 @@ public class MainActivity extends Activity {
                 e.printStackTrace();
                 return null;
             }
-        }
-
-        private SystemProperties() {
-            throw new AssertionError("No instances");
         }
     }
 
