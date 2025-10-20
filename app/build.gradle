@@ -3,27 +3,27 @@ plugins {
 }
 
 android {
-    namespace 'com.guyuexuan.power'
-    compileSdk 19
+    namespace = 'com.guyuexuan.power'
+    compileSdkVersion = 19
 
     defaultConfig {
-        applicationId "com.guyuexuan.power"
-        minSdk 19
+        applicationId = "com.guyuexuan.power"
+        minSdk = 19
         //noinspection ExpiredTargetSdkVersion
-        targetSdk 19
-        versionCode 2
-        versionName "2.4"
+        targetSdk = 19
+        versionCode = 2
+        versionName = "2.5"
     }
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled = false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
 }
 

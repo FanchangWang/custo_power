@@ -7,9 +7,9 @@
     android:orientation="vertical"
     android:paddingLeft="10dp"
     android:paddingRight="10dp"
-    tools:context=".MainActivity">
+    tools:context=".MainActivity"
+    tools:ignore="HardcodedText">
 
-    <!-- 自启动相关 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -17,65 +17,71 @@
         android:gravity="center_vertical">
 
         <TextView
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="fill"
-            android:text="自启 Carlife"
-            android:textSize="16sp"
-            tools:ignore="HardcodedText" />
-
-        <Button
-            android:id="@+id/btn_auto_enabled"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="自启"
-            tools:ignore="HardcodedText" />
-
-        <Button
-            android:id="@+id/btn_auto_disabled"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="关闭"
-            tools:ignore="HardcodedText" />
+            android:text="百度 CarLife 自启动时机"
+            android:textColor="#FFFFFFFF"
+            android:textSize="16sp" />
     </LinearLayout>
 
-    <!-- Carlife 相关 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
-        android:gravity="center_vertical">
+        android:divider="?android:attr/dividerHorizontal"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:showDividers="middle">
 
-        <TextView
-            android:layout_width="0dp"
+        <Switch
+            android:id="@+id/switch_auto_on_boot"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:gravity="fill"
-            android:text="百度 Carlife"
-            android:textSize="16sp"
-            tools:ignore="HardcodedText" />
+            android:checked="false"
+            android:minHeight="48dp"
+            android:text="开机完成"
+            android:textOff="否"
+            android:textOn="是" />
 
-        <Button
-            android:id="@+id/btn_carlife_usb"
-            android:layout_width="0dp"
+        <Switch
+            android:id="@+id/switch_auto_on_bt"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="USB"
-            tools:ignore="HardcodedText" />
+            android:checked="false"
+            android:minHeight="48dp"
+            android:text="蓝牙连接"
+            android:textOff="否"
+            android:textOn="是" />
 
-        <Button
-            android:id="@+id/btn_carlife_wifi"
-            android:layout_width="0dp"
+        <Switch
+            android:id="@+id/switch_auto_on_wifi"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="WIFI"
-            tools:ignore="HardcodedText" />
+            android:checked="false"
+            android:minHeight="48dp"
+            android:text="WIFI连接"
+            android:textOff="否"
+            android:textOn="是" />
+
     </LinearLayout>
 
-    <!-- USB 模式相关 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="CarLife 自启动 蓝牙/WIFI名称（留空匹配所有）"
+            android:textColor="#FFFFFFFF"
+            android:textSize="16sp" />
+    </LinearLayout>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -87,25 +93,99 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:gravity="fill"
+            android:text="蓝牙名"
+            android:textSize="16sp" />
+
+        <EditText
+            android:id="@+id/edit_carlife_bt_name"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="3"
+            android:hint="忽略大小写" />
+
+        <Button
+            android:id="@+id/btn_carlife_bt_clean"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="清空" />
+
+        <Button
+            android:id="@+id/btn_carlife_bt_save"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="保存" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="fill"
+            android:text="WIFI名"
+            android:textSize="16sp" />
+
+        <EditText
+            android:id="@+id/edit_carlife_wifi_ssid"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="3"
+            android:hint="忽略大小写" />
+
+        <Button
+            android:id="@+id/btn_carlife_wifi_clean"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="清空" />
+
+        <Button
+            android:id="@+id/btn_carlife_wifi_save"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="保存" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:gravity="center_vertical">
+
+        <Switch
+            android:id="@+id/switch_carlife_wifi_mode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:checked="false"
+            android:minHeight="48dp"
+            android:text="百度 CarLife 连接方式"
+            android:textOff="USB"
+            android:textOn="WIFI" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:gravity="center_vertical">
+
+        <Switch
+            android:id="@+id/switch_usb_device_mode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:checked="false"
+            android:minHeight="48dp"
             android:text="USB 模式"
-            android:textSize="16sp"
-            tools:ignore="HardcodedText" />
-
-        <Button
-            android:id="@+id/btn_usb_host"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="HOST"
-            tools:ignore="HardcodedText" />
-
-        <Button
-            android:id="@+id/btn_usb_device"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="DEVICE"
-            tools:ignore="HardcodedText" />
+            android:textOff="HOST"
+            android:textOn="DEVICE" />
     </LinearLayout>
 
     <!-- 重启相关 -->
@@ -121,24 +201,21 @@
             android:layout_weight="1"
             android:gravity="fill"
             android:text="重启车机"
-            android:textSize="16sp"
-            tools:ignore="HardcodedText" />
+            android:textSize="16sp" />
 
         <Button
             android:id="@+id/btn_reboot_os"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="系统"
-            tools:ignore="HardcodedText" />
+            android:text="系统" />
 
         <Button
             android:id="@+id/btn_reboot_rec"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Recovery"
-            tools:ignore="HardcodedText" />
+            android:text="Recovery" />
     </LinearLayout>
 
     <!-- 其他功能 -->
@@ -154,24 +231,21 @@
             android:layout_weight="1"
             android:gravity="fill"
             android:text="其他功能"
-            android:textSize="16sp"
-            tools:ignore="HardcodedText" />
+            android:textSize="16sp" />
 
         <Button
             android:id="@+id/btn_open_setting"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="原生设置"
-            tools:ignore="HardcodedText" />
+            android:text="原生设置" />
 
         <Button
             android:id="@+id/btn_finish"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="退出应用"
-            tools:ignore="HardcodedText" />
+            android:text="退出应用" />
     </LinearLayout>
 
 </LinearLayout>

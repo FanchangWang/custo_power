@@ -4,9 +4,17 @@
     android:sharedUserId="android.uid.system"
     tools:ignore="Deprecated">
 
-    <uses-permission android:name="android.permission.REBOOT" tools:ignore="ProtectedPermissions" />
-    <uses-permission android:name="android.permission.WRITE_SETTINGS" tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.REBOOT"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission
+        android:name="android.permission.WRITE_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:icon="@mipmap/ic_launcher"
@@ -21,12 +29,22 @@
             </intent-filter>
         </activity>
 
+        <!-- 注册广播接收器 -->
         <receiver
-            android:name=".BootReceiver"
+            android:name=".SystemEventsReceiver"
             android:enabled="true"
             android:exported="true">
+            <!-- 注册 开机 Action -->
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+            <!-- 注册 蓝牙连接成功 Action -->
+            <intent-filter>
+                <action android:name="android.bluetooth.device.action.ACL_CONNECTED" />
+            </intent-filter>
+            <!-- 注册W iFi网络状态变化 Action -->
+            <intent-filter>
+                <action android:name="android.net.wifi.NETWORK_STATE_CHANGED" />
             </intent-filter>
         </receiver>
     </application>
