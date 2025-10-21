@@ -4,6 +4,8 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
     android:orientation="vertical"
     android:paddingLeft="10dp"
     android:paddingRight="10dp"
@@ -13,79 +15,63 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
         android:gravity="center_vertical">
 
+        <!-- 左侧 TextView 占一半宽度 -->
         <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="百度 CarLife 自启动时机"
-            android:textColor="#FFFFFFFF"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="left"
+            android:paddingTop="10dp"
+            android:text="百度 CarLife 相关设置\n\n右侧选择自启动时机 ==>\n\n蓝牙/WIFI名 模糊匹配\n留空匹配所有"
+            android:textColor="#FFFF00"
             android:textSize="16sp" />
+
+        <!-- 右侧三个 Switch 垂直排列，占一半宽度 -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
+
+            <Switch
+                android:id="@+id/switch_auto_on_boot"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:checked="false"
+                android:minHeight="48dp"
+                android:text="开机完成"
+                android:textOff="否"
+                android:textOn="是" />
+
+            <Switch
+                android:id="@+id/switch_auto_on_bt"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:checked="false"
+                android:minHeight="48dp"
+                android:text="蓝牙连接"
+                android:textOff="否"
+                android:textOn="是" />
+
+            <Switch
+                android:id="@+id/switch_auto_on_wifi"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:checked="false"
+                android:minHeight="48dp"
+                android:text="WIFI连接"
+                android:textOff="否"
+                android:textOn="是" />
+
+        </LinearLayout>
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:divider="?android:attr/dividerHorizontal"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:showDividers="middle">
-
-        <Switch
-            android:id="@+id/switch_auto_on_boot"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:checked="false"
-            android:minHeight="48dp"
-            android:text="开机完成"
-            android:textOff="否"
-            android:textOn="是" />
-
-        <Switch
-            android:id="@+id/switch_auto_on_bt"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:checked="false"
-            android:minHeight="48dp"
-            android:text="蓝牙连接"
-            android:textOff="否"
-            android:textOn="是" />
-
-        <Switch
-            android:id="@+id/switch_auto_on_wifi"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:checked="false"
-            android:minHeight="48dp"
-            android:text="WIFI连接"
-            android:textOff="否"
-            android:textOn="是" />
-
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:gravity="center_vertical">
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="CarLife 自启动 蓝牙/WIFI名称（留空匹配所有）"
-            android:textColor="#FFFFFFFF"
-            android:textSize="16sp" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
         android:gravity="center_vertical">
 
         <TextView
@@ -94,6 +80,7 @@
             android:layout_weight="1"
             android:gravity="fill"
             android:text="蓝牙名"
+            android:textColor="#FFFFFF"
             android:textSize="16sp" />
 
         <EditText
@@ -121,7 +108,6 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
         android:gravity="center_vertical">
 
         <TextView
@@ -130,6 +116,7 @@
             android:layout_weight="1"
             android:gravity="fill"
             android:text="WIFI名"
+            android:textColor="#FFFFFF"
             android:textSize="16sp" />
 
         <EditText
@@ -157,7 +144,6 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
         android:gravity="center_vertical">
 
         <Switch
@@ -174,7 +160,6 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
         android:gravity="center_vertical">
 
         <Switch
@@ -192,7 +177,6 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
         android:gravity="center_vertical">
 
         <TextView
@@ -222,7 +206,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="2dp"
         android:gravity="center_vertical">
 
         <TextView
