@@ -23,8 +23,8 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:gravity="left"
-            android:paddingTop="10dp"
-            android:text="百度 CarLife 相关设置\n\n右侧选择自启动时机 ==>\n\n蓝牙/WIFI名 模糊匹配\n留空匹配所有"
+            android:paddingTop="6dp"
+            android:text="百度 CarLife 自启动时机\n\nWIFI名 支持模糊匹配\n留空匹配所有"
             android:textColor="#FFFF00"
             android:textSize="16sp" />
 
@@ -47,16 +47,6 @@
                 android:textOn="是" />
 
             <Switch
-                android:id="@+id/switch_auto_on_bt"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:checked="false"
-                android:minHeight="48dp"
-                android:text="蓝牙连接"
-                android:textOff="否"
-                android:textOn="是" />
-
-            <Switch
                 android:id="@+id/switch_auto_on_wifi"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -67,42 +57,6 @@
                 android:textOn="是" />
 
         </LinearLayout>
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="fill"
-            android:text="蓝牙名"
-            android:textColor="#FFFFFF"
-            android:textSize="16sp" />
-
-        <EditText
-            android:id="@+id/edit_carlife_bt_name"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="3"
-            android:hint="忽略大小写" />
-
-        <Button
-            android:id="@+id/btn_carlife_bt_clean"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="清空" />
-
-        <Button
-            android:id="@+id/btn_carlife_bt_save"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="保存" />
     </LinearLayout>
 
     <LinearLayout

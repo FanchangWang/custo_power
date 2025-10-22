@@ -35,20 +35,16 @@ public class MainActivity extends Activity {
         ConfigManager.init(this);
 
         Switch switchAutoOnBoot = (Switch) findViewById(R.id.switch_auto_on_boot);
-        Switch switchAutoOnBT = (Switch) findViewById(R.id.switch_auto_on_bt);
         Switch switchAutoOnWifi = (Switch) findViewById(R.id.switch_auto_on_wifi);
         Switch switchCarlifeWifiMode = (Switch) findViewById(R.id.switch_carlife_wifi_mode);
         Switch switchUsbDeviceMode = (Switch) findViewById(R.id.switch_usb_device_mode);
-        EditText editCarlifeBtName = (EditText) findViewById(R.id.edit_carlife_bt_name);
         EditText editCarlifeWifiName = (EditText) findViewById(R.id.edit_carlife_wifi_ssid);
 
         // 设置开关状态
         switchAutoOnBoot.setChecked(ConfigManager.isAutoOnBoot);
-        switchAutoOnBT.setChecked(ConfigManager.isAutoOnBT);
         switchAutoOnWifi.setChecked(ConfigManager.isAutoOnWifi);
         switchCarlifeWifiMode.setChecked(ConfigManager.isCarlifeWifiMode);
         switchUsbDeviceMode.setChecked(ConfigManager.isUsbDeviceMode);
-        editCarlifeBtName.setText(ConfigManager.strCarlifeBtName);
         editCarlifeWifiName.setText(ConfigManager.strCarlifeWifiName);
 
         // 设置开关监听
@@ -57,22 +53,10 @@ public class MainActivity extends Activity {
             ConfigManager.saveConfig();
             Log.d(TAG, "百度 CarLife 自启动方式：开机 => " + isChecked);
         });
-        switchAutoOnBT.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            ConfigManager.isAutoOnBT = isChecked;
-            ConfigManager.saveConfig();
-            Log.d(TAG, "百度 CarLife 自启动方式：蓝牙 => " + isChecked);
-        });
         switchAutoOnWifi.setOnCheckedChangeListener((buttonView, isChecked) -> {
             ConfigManager.isAutoOnWifi = isChecked;
             ConfigManager.saveConfig();
             Log.d(TAG, "百度 CarLife 自启动方式：WIFI => " + isChecked);
-        });
-        findViewById(R.id.btn_carlife_bt_clean).setOnClickListener(v -> {
-            editCarlifeBtName.setText("");
-        });
-        findViewById(R.id.btn_carlife_bt_save).setOnClickListener(v -> {
-            ConfigManager.strCarlifeBtName = editCarlifeBtName.getText().toString();
-            ConfigManager.saveConfig();
         });
 
         findViewById(R.id.btn_carlife_wifi_clean).setOnClickListener(v -> {

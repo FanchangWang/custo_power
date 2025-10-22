@@ -11,8 +11,6 @@
         android:name="android.permission.WRITE_SETTINGS"
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.BLUETOOTH" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
@@ -39,10 +37,6 @@
             <!-- 注册 开机 Action -->
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter>
-            <!-- 注册 蓝牙连接成功 Action -->
-            <intent-filter>
-                <action android:name="android.bluetooth.anw.action.CONNECT_STATUS" />
             </intent-filter>
             <!-- 注册 WiFi 网络状态变化 Action -->
             <intent-filter>
