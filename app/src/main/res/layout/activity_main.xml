@@ -117,6 +117,22 @@
         android:gravity="center_vertical">
 
         <Switch
+            android:id="@+id/switch_carlife_hide_status_bar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:checked="false"
+            android:minHeight="48dp"
+            android:text="百度 CarLife 系统状态栏"
+            android:textOff="显示"
+            android:textOn="隐藏" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical">
+
+        <Switch
             android:id="@+id/switch_usb_device_mode"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
