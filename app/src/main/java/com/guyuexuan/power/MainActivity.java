@@ -1,11 +1,14 @@
 package com.guyuexuan.power;
 
 import android.app.Activity;
+import android.app.ActivityManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.PowerManager;
+import android.os.Process;
 import android.provider.Settings;
 import android.util.Log;
 import android.widget.EditText;
@@ -14,6 +17,7 @@ import android.widget.Toast;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.List;
 
 public class MainActivity extends Activity {
 
@@ -81,6 +85,35 @@ public class MainActivity extends Activity {
             Log.d(TAG, msg);
             Toast.makeText(MainActivity.this, msg, Toast.LENGTH_SHORT).show();
         });
+        findViewById(R.id.btn_carlife_kill_process).setOnClickListener(v -> {
+            // to-do: android 4.4 系统中，拥有 uid system 权限，杀死包名 com.hsae.d531mc.carlife 的进程
+
+            final String targetPackage = "com.hsae.d531mc.carlife";
+            ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+            if (am == null) {
+                Log.e(TAG, "ActivityManager 获取失败!");
+                Toast.makeText(MainActivity.this, "Error: ActivityManager 获取失败!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            String msg = "杀死百度 CarLife 进程: ";
+            /* 第一步：硬杀——Process.killProcess(pid) */
+            List<ActivityManager.RunningAppProcessInfo> list = am.getRunningAppProcesses();
+            if (list != null) {
+                for (ActivityManager.RunningAppProcessInfo info : list) {
+                    if (targetPackage.equals(info.processName)) {
+                        int pid = info.pid;
+                        Process.killProcess(pid);
+                        msg = msg + "killProcess() PID=" + pid;
+                        break;
+                    }
+                }
+            }
+            /* 第二步：补刀——killBackgroundProcesses */
+            am.killBackgroundProcesses(targetPackage);
+            msg = msg + " killBackgroundProcesses() 补刀";
+            Log.d(TAG, msg);
+            Toast.makeText(MainActivity.this, msg, Toast.LENGTH_SHORT).show();
+        });
         switchUsbDeviceMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
             File file = new File("/sys/class/gpio/gpio22/value");
             try {
@@ -145,9 +178,10 @@ public class MainActivity extends Activity {
 
     }
 
-//    @Override
-//    protected void onResume() {
-//        super.onResume();
+//    /**
+//     * 隐藏系统状态栏
+//     */
+//    private void hideSystemStatusBar() {
 //        if (Settings.System.getInt(getContentResolver(), "CarLifeHideStatusBar", 0) == 1) { // 隐藏系统状态栏
 //            getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 //            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
