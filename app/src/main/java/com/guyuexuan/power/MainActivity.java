@@ -2,6 +2,7 @@ package com.guyuexuan.power;
 
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
@@ -114,6 +115,19 @@ public class MainActivity extends Activity {
             Log.d(TAG, msg);
             Toast.makeText(MainActivity.this, msg, Toast.LENGTH_SHORT).show();
         });
+        findViewById(R.id.btn_carlife_start_process).setOnClickListener(v -> {
+            try {
+                Intent startIntent = new Intent();
+                startIntent.setClassName("com.hsae.d531mc.carlife", "com.hsae.d531mc.carlife.CarLifeActivity");
+                startIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(startIntent);
+                finish();
+            } catch (ActivityNotFoundException e) {
+                Log.e(TAG, "Carlife 应用未安装", e);
+                Toast.makeText(this, "Carlife 应用未安装", Toast.LENGTH_SHORT).show();
+            }
+        });
+
         switchUsbDeviceMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
             File file = new File("/sys/class/gpio/gpio22/value");
             try {
